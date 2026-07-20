@@ -6,6 +6,7 @@ RSpec.describe AdministratorNotifications::AccountNotificationMailer do
   let(:class_instance) { described_class.new }
 
   before do
+    create(:installation_config, name: 'BRAND_NAME', value: 'VibeExe')
     allow(described_class).to receive(:new).and_return(class_instance)
     allow(class_instance).to receive(:smtp_config_set_or_development?).and_return(true)
     account.custom_attributes['marked_for_deletion_at'] = 7.days.from_now.iso8601
@@ -15,14 +16,14 @@ RSpec.describe AdministratorNotifications::AccountNotificationMailer do
   describe '#account_deletion_user_initiated' do
     it 'sets the correct subject for user-initiated deletion' do
       mail = mailer.account_deletion_user_initiated(account, 'manual_deletion')
-      expect(mail.subject).to eq('Your Chatwoot account deletion has been scheduled')
+      expect(mail.subject).to eq('Your VibeExe account deletion has been scheduled')
     end
   end
 
   describe '#account_deletion_for_inactivity' do
     it 'sets the correct subject for system-initiated deletion' do
       mail = mailer.account_deletion_for_inactivity(account, 'Account Inactive')
-      expect(mail.subject).to eq('Your Chatwoot account is scheduled for deletion due to inactivity')
+      expect(mail.subject).to eq('Your VibeExe account is scheduled for deletion due to inactivity')
     end
   end
 

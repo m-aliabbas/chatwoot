@@ -50,6 +50,22 @@
   value: 'https://www.vibeexe.com/privacy-policy'
   display_title: 'Privacy URL'
   description: 'The privacy policy URL displayed in the app'
+- name: SUPPORT_DOCS_URL
+  value:
+  display_title: 'Support Documentation URL'
+  description: 'The user-facing documentation URL displayed in the dashboard help menu. Leave blank to hide the link.'
+- name: CHANGELOG_URL
+  value:
+  display_title: 'Changelog URL'
+  description: 'The user-facing changelog URL displayed in the dashboard help menu. Leave blank to hide the link.'
+- name: CHANGELOG_POST_URL_TEMPLATE
+  value:
+  display_title: 'Changelog Post URL Template'
+  description: 'The URL template used for individual changelog posts. Use %{slug} for the post slug. Leave blank to disable external post links.'
+- name: HELP_CENTER_CNAME_TARGET
+  value:
+  display_title: 'Help Center CNAME Target'
+  description: 'The CNAME target shown to users when configuring help center custom domains.'
 - name: DISPLAY_MANIFEST
   value: true
   display_title: 'VibeExe Metadata'

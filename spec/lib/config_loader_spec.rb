@@ -25,6 +25,10 @@ describe ConfigLoader do
         expect(InstallationConfig.find_by(name: 'LOGO_DARK').value).to eq('/brand-assets/vibeexe_logo_dark.svg')
         expect(InstallationConfig.find_by(name: 'LOGO_THUMBNAIL').value).to eq('/brand-assets/vibeexe_logo_thumbnail.svg')
         expect(InstallationConfig.find_by(name: 'BRAND_URL').value).to eq('https://www.vibeexe.com')
+        expect(InstallationConfig.find_by(name: 'SUPPORT_DOCS_URL')).to be_present
+        expect(InstallationConfig.find_by(name: 'CHANGELOG_URL')).to be_present
+        expect(InstallationConfig.find_by(name: 'CHANGELOG_POST_URL_TEMPLATE')).to be_present
+        expect(InstallationConfig.find_by(name: 'HELP_CENTER_CNAME_TARGET')).to be_present
       end
     end
 

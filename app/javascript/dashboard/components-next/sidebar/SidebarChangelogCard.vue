@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import GroupedStackedChangelogCard from 'dashboard/components-next/changelog-card/GroupedStackedChangelogCard.vue';
 import { useUISettings } from 'dashboard/composables/useUISettings';
+import { useMapGetter } from 'dashboard/composables/store';
 import changelogAPI from 'dashboard/api/changelog';
 
 defineOptions({
@@ -11,6 +12,7 @@ defineOptions({
 const MAX_DISMISSED_SLUGS = 5;
 
 const { uiSettings, updateUISettings } = useUISettings();
+const globalConfig = useMapGetter('globalConfig/get');
 const posts = ref([]);
 const currentIndex = ref(0);
 const dismissingCards = ref([]);
@@ -84,8 +86,9 @@ const handleDismiss = slug => {
 
 const handleReadMore = () => {
   const currentPost = unDismissedPosts.value[currentIndex.value];
-  if (currentPost?.slug) {
-    window.open(`https://www.chatwoot.com/blog/${currentPost.slug}`, '_blank');
+  const postUrlTemplate = globalConfig.value.changelogPostUrlTemplate;
+  if (currentPost?.slug && postUrlTemplate) {
+    window.open(postUrlTemplate.replace('%{slug}', currentPost.slug), '_blank');
   }
 };
 

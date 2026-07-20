@@ -6,6 +6,7 @@ import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import { getHostNameFromURL } from 'dashboard/helper/URLHelper';
 import { email, required } from '@vuelidate/validators';
 import { useVuelidate } from '@vuelidate/core';
+import { useMapGetter } from 'dashboard/composables/store';
 
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
@@ -21,6 +22,7 @@ const props = defineProps({
 const emit = defineEmits(['send', 'close']);
 
 const { t } = useI18n();
+const globalConfig = useMapGetter('globalConfig/get');
 
 const state = reactive({
   email: '',
@@ -33,6 +35,10 @@ const validationRules = {
 const v$ = useVuelidate(validationRules, state);
 
 const domain = computed(() => {
+  if (globalConfig.value?.helpCenterCnameTarget) {
+    return globalConfig.value.helpCenterCnameTarget;
+  }
+
   const { hostURL, helpCenterURL } = window?.chatwootConfig || {};
   return getHostNameFromURL(helpCenterURL) || getHostNameFromURL(hostURL) || '';
 });
@@ -102,7 +108,8 @@ defineExpose({ dialogRef });
           <p class="mb-0 text-sm text-n-slate-12">
             {{
               t(
-                'HELP_CENTER.PORTAL_SETTINGS.CONFIGURATION_FORM.CUSTOM_DOMAIN.DNS_CONFIGURATION_DIALOG.DESCRIPTION'
+                'HELP_CENTER.PORTAL_SETTINGS.CONFIGURATION_FORM.CUSTOM_DOMAIN.DNS_CONFIGURATION_DIALOG.DESCRIPTION',
+                { cnameTarget: domain }
               )
             }}
           </p>
