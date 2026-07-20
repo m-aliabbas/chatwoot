@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toPng } from 'html-to-image';
+import { useBranding } from 'shared/composables/useBranding';
 
 const props = defineProps({
   show: {
@@ -25,9 +26,13 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const { t } = useI18n();
+const { fileNamePrefix, logo, replaceInstallationName } = useBranding();
 
 const isGenerating = ref(false);
 const shareImageUrl = ref(null);
+
+const yearInReviewFileName = () =>
+  `${fileNamePrefix.value}-year-in-review-${props.year}.png`;
 
 const generateImage = async () => {
   if (!props.slideElement) return;
@@ -89,23 +94,28 @@ const generateImage = async () => {
     ctx.font = 'normal 16px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(
-      t('YEAR_IN_REVIEW.SHARE_MODAL.BRANDING'),
+      replaceInstallationName(t('YEAR_IN_REVIEW.SHARE_MODAL.BRANDING')),
       borderSize,
       img.height + borderSize + 35
     );
 
-    const logo = new Image();
-    logo.src = '/brand-assets/logo.svg';
+    const brandLogo = new Image();
+    brandLogo.src = logo.value;
     await new Promise(resolve => {
-      logo.onload = resolve;
+      brandLogo.onload = resolve;
+      brandLogo.onerror = resolve;
     });
 
     const logoHeight = 30;
-    const logoWidth = (logo.width / logo.height) * logoHeight;
+    const logoWidth = brandLogo.height
+      ? (brandLogo.width / brandLogo.height) * logoHeight
+      : 0;
     const logoX = finalCanvas.width - borderSize - logoWidth;
     const logoY = img.height + borderSize + 15;
 
-    ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+    if (logoWidth > 0) {
+      ctx.drawImage(brandLogo, logoX, logoY, logoWidth, logoHeight);
+    }
 
     shareImageUrl.value = finalCanvas.toDataURL('image/png');
   } catch (err) {
@@ -122,7 +132,7 @@ const downloadImage = () => {
 
   const link = document.createElement('a');
   link.href = shareImageUrl.value;
-  link.download = `chatwoot-year-in-review-${props.year}.png`;
+  link.download = yearInReviewFileName();
   link.click();
 };
 
@@ -132,7 +142,7 @@ const shareImage = async () => {
   try {
     const response = await fetch(shareImageUrl.value);
     const blob = await response.blob();
-    const file = new File([blob], `chatwoot-year-in-review-${props.year}.png`, {
+    const file = new File([blob], yearInReviewFileName(), {
       type: 'image/png',
     });
 
@@ -145,7 +155,9 @@ const shareImage = async () => {
         title: t('YEAR_IN_REVIEW.SHARE_MODAL.SHARE_TITLE', {
           year: props.year,
         }),
-        text: t('YEAR_IN_REVIEW.SHARE_MODAL.SHARE_TEXT', { year: props.year }),
+        text: replaceInstallationName(
+          t('YEAR_IN_REVIEW.SHARE_MODAL.SHARE_TEXT', { year: props.year })
+        ),
         files: [file],
       });
       return;

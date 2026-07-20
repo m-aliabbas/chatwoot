@@ -93,4 +93,47 @@ describe('useBranding', () => {
       expect(result).toBe('Welcome to My-Company & Co.');
     });
   });
+
+  describe('brand values', () => {
+    it('returns configured logo values and a filename-safe installation prefix', () => {
+      mockGlobalConfig.value = {
+        installationName: 'My Company & Co.',
+        logo: '/custom/logo.svg',
+        logoDark: '/custom/logo-dark.svg',
+        logoThumbnail: '/custom/logo-thumb.svg',
+      };
+
+      const {
+        fileNamePrefix,
+        installationName,
+        logo,
+        logoDark,
+        logoThumbnail,
+      } = useBranding();
+
+      expect(installationName.value).toBe('My Company & Co.');
+      expect(logo.value).toBe('/custom/logo.svg');
+      expect(logoDark.value).toBe('/custom/logo-dark.svg');
+      expect(logoThumbnail.value).toBe('/custom/logo-thumb.svg');
+      expect(fileNamePrefix.value).toBe('my-company-co');
+    });
+
+    it('falls back to Chatwoot brand values when config is missing', () => {
+      mockGlobalConfig.value = {};
+
+      const {
+        fileNamePrefix,
+        installationName,
+        logo,
+        logoDark,
+        logoThumbnail,
+      } = useBranding();
+
+      expect(installationName.value).toBe('Chatwoot');
+      expect(logo.value).toBe('/brand-assets/logo.svg');
+      expect(logoDark.value).toBe('/brand-assets/logo_dark.svg');
+      expect(logoThumbnail.value).toBe('/brand-assets/logo_thumbnail.svg');
+      expect(fileNamePrefix.value).toBe('chatwoot');
+    });
+  });
 });

@@ -1,5 +1,6 @@
 <script setup>
 import { useI18n } from 'vue-i18n';
+import { useBranding } from 'shared/composables/useBranding';
 
 defineProps({
   year: {
@@ -9,9 +10,7 @@ defineProps({
 });
 
 const { t } = useI18n();
-
-const signatureImage =
-  '/assets/images/dashboard/year-in-review/fifth-frame-signature.png';
+const { installationName, logo } = useBranding();
 </script>
 
 <template>
@@ -33,8 +32,8 @@ const signatureImage =
       </div>
       <div class="mt-12">
         <img
-          :src="signatureImage"
-          alt="Chatwoot Team Signature"
+          :src="logo"
+          :alt="`${installationName} Logo`"
           class="w-auto h-8 md:h-10"
         />
       </div>

@@ -1,4 +1,6 @@
 class Installation::OnboardingController < ApplicationController
+  helper BrandingHelper
+
   before_action :ensure_installation_onboarding
 
   def index; end

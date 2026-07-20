@@ -19,6 +19,22 @@ RSpec.describe 'Installation::Onboarding API', type: :request do
         expect(response).to have_http_status(:success)
         Redis::Alfred.delete(Redis::Alfred::CHATWOOT_INSTALLATION_ONBOARDING)
       end
+
+      it 'renders configured visual branding on the onboarding page' do
+        allow(GlobalConfigService).to receive(:load).and_call_original
+        allow(GlobalConfigService).to receive(:load).with('INSTALLATION_NAME', 'Chatwoot').and_return('VibeDesk')
+        allow(GlobalConfigService).to receive(:load).with('LOGO', '/brand-assets/logo.svg').and_return('/custom/logo.svg')
+        allow(GlobalConfigService).to receive(:load).with('LOGO_DARK', '/brand-assets/logo_dark.svg').and_return('/custom/logo-dark.svg')
+
+        Redis::Alfred.set(Redis::Alfred::CHATWOOT_INSTALLATION_ONBOARDING, true)
+        get '/installation/onboarding'
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('<title>SuperAdmin | VibeDesk</title>')
+        expect(response.body).to include('src="/custom/logo.svg"', 'src="/custom/logo-dark.svg"', 'alt="VibeDesk"')
+        expect(response.body).to include('Howdy, Welcome to VibeDesk')
+        Redis::Alfred.delete(Redis::Alfred::CHATWOOT_INSTALLATION_ONBOARDING)
+      end
     end
   end
 
