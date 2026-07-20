@@ -15,6 +15,17 @@ describe ConfigLoader do
         subject
         expect(InstallationConfig.find_by(name: 'ACCOUNT_LEVEL_FEATURE_DEFAULTS')).to be_truthy
       end
+
+      it 'creates VibeExe branding defaults' do
+        subject
+
+        expect(InstallationConfig.find_by(name: 'INSTALLATION_NAME').value).to eq('VibeExe')
+        expect(InstallationConfig.find_by(name: 'BRAND_NAME').value).to eq('VibeExe')
+        expect(InstallationConfig.find_by(name: 'LOGO').value).to eq('/brand-assets/vibeexe_logo.svg')
+        expect(InstallationConfig.find_by(name: 'LOGO_DARK').value).to eq('/brand-assets/vibeexe_logo_dark.svg')
+        expect(InstallationConfig.find_by(name: 'LOGO_THUMBNAIL').value).to eq('/brand-assets/vibeexe_logo_thumbnail.svg')
+        expect(InstallationConfig.find_by(name: 'BRAND_URL').value).to eq('https://www.vibeexe.com')
+      end
     end
 
     context 'with reconcile_only_new option' do
