@@ -31,7 +31,10 @@ class VibeExe::Crm::PipelineStage < ApplicationRecord
   belongs_to :pipeline, class_name: 'VibeExe::Crm::Pipeline'
   has_many :leads, class_name: 'VibeExe::Crm::Lead', dependent: :restrict_with_exception
 
+  enum stage_type: { open_stage: 0, won_stage: 1, lost_stage: 2 }
+
   validates :name, presence: true, uniqueness: { scope: :pipeline_id }
+  validates :probability, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
   validate :validate_account_consistency
 
   scope :active, -> { where(active: true) }

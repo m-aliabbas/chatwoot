@@ -270,7 +270,30 @@ Rails.application.routes.draw do
           resource :branded_email_layout, only: [:show, :update]
           namespace :vibe_exe, path: 'vibeexe' do
             namespace :crm do
-              resources :pipelines, only: [:index]
+              resources :leads, only: [:index, :show, :create, :update] do
+                collection do
+                  get :board
+                end
+                member do
+                  patch :archive
+                  patch :restore
+                  patch :mark_won
+                  patch :mark_lost
+                  patch :change_stage
+                end
+                resources :conversations, only: [:index, :create, :destroy], controller: 'lead_conversations'
+                resources :activities, only: [:index, :create], controller: 'lead_activities'
+              end
+              resources :pipelines, only: [:index, :create, :update, :destroy] do
+                collection do
+                  post :bootstrap_default
+                end
+                resources :stages, only: [:create, :update, :destroy], controller: 'pipeline_stages' do
+                  collection do
+                    patch :reorder
+                  end
+                end
+              end
               resources :inboxes, only: [] do
                 resource :lead_config, only: [:show, :update], controller: 'inbox_lead_configs'
               end

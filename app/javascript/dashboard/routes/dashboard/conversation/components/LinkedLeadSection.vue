@@ -109,7 +109,7 @@ const unlinkLead = async lead => {
 };
 
 const openLead = lead => {
-  router.push({ name: 'leads_index', query: { lead_id: lead.id } });
+  router.push({ name: 'lead_show', params: { leadId: lead.id } });
 };
 
 watch(() => props.conversationId, fetchLinkedLeads);

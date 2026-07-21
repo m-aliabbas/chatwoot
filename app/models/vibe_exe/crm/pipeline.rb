@@ -32,4 +32,5 @@ class VibeExe::Crm::Pipeline < ApplicationRecord
 
   scope :active, -> { where(active: true) }
   scope :ordered, -> { order(default: :desc, position: :asc, id: :asc) }
+
 end

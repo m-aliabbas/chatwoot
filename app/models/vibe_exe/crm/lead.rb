@@ -63,21 +63,33 @@ class VibeExe::Crm::Lead < ApplicationRecord
   enum priority: { low: 0, medium: 1, high: 2, urgent: 3 }
 
   validates :title, :source, presence: true
+  validates :currency, presence: true
+  validates :estimated_value, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validate :validate_account_consistency
+
+  before_validation :set_last_activity_at, on: :create
 
   scope :available_for_contact, lambda { |account, contact|
     where(account: account, contact: contact, status: :open, archived_at: nil, closed_at: nil, closed_status: nil)
   }
+
+  scope :active, -> { where(archived_at: nil) }
 
   private
 
   def validate_account_consistency
     errors.add(:contact, :invalid) if contact.present? && contact.account_id != account_id
     errors.add(:pipeline, :invalid) if pipeline.present? && pipeline.account_id != account_id
+    errors.add(:pipeline, :invalid) if pipeline.present? && !pipeline.active?
     errors.add(:pipeline_stage, :invalid) if pipeline_stage.present? && pipeline_stage.account_id != account_id
     errors.add(:pipeline_stage, :invalid) if pipeline_stage.present? && pipeline.present? && pipeline_stage.pipeline_id != pipeline_id
+    errors.add(:pipeline_stage, :invalid) if pipeline_stage.present? && !pipeline_stage.active?
     errors.add(:owner, :invalid) if owner.present? && owner.account_users.where(account_id: account_id).blank?
     errors.add(:team, :invalid) if team.present? && team.account_id != account_id
     errors.add(:created_by, :invalid) if created_by.present? && created_by.account_users.where(account_id: account_id).blank?
+  end
+
+  def set_last_activity_at
+    self.last_activity_at ||= Time.zone.now
   end
 end

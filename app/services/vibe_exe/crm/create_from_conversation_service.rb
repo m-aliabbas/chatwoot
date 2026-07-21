@@ -57,7 +57,7 @@ class VibeExe::Crm::CreateFromConversationService
   end
 
   def pipeline_stage
-    @pipeline_stage ||= pipeline.stages.active.ordered.first!
+    @pipeline_stage ||= config&.default_stage || pipeline.stages.active.ordered.first!
   end
 
   def lead_title

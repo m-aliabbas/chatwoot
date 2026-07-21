@@ -23,6 +23,7 @@ const pipelines = ref([]);
 const form = ref({
   lead_creation_mode: 'manual',
   default_pipeline_id: '',
+  default_stage_id: '',
   default_owner_id: '',
   default_team_id: '',
 });
@@ -48,6 +49,18 @@ const ownerOptions = computed(() => [
     label: agent.name || agent.email,
   })),
 ]);
+const stageOptions = computed(() => {
+  const pipeline = pipelines.value.find(
+    item => item.id === Number(form.value.default_pipeline_id)
+  );
+  return [
+    { value: '', label: t('VIBEEXE_CRM.LEAD_CONFIG.NONE') },
+    ...(pipeline?.stages || []).map(stage => ({
+      value: stage.id,
+      label: stage.name,
+    })),
+  ];
+});
 const teamOptions = computed(() => [
   { value: '', label: t('VIBEEXE_CRM.LEAD_CONFIG.NONE') },
   ...teams.value.map(team => ({
@@ -60,6 +73,7 @@ const applyConfig = config => {
   form.value = {
     lead_creation_mode: config.lead_creation_mode || 'manual',
     default_pipeline_id: config.default_pipeline_id || '',
+    default_stage_id: config.default_stage_id || '',
     default_owner_id: config.default_owner_id || '',
     default_team_id: config.default_team_id || '',
   };
@@ -128,6 +142,17 @@ onMounted(() => {
           v-model="form.lead_creation_mode"
           :options="modeOptions"
           :disabled="isFetching"
+        />
+      </label>
+
+      <label class="grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-2 md:gap-6 items-center">
+        <span class="text-sm font-medium text-n-slate-12">
+          {{ $t('VIBEEXE_CRM.LEAD_CONFIG.STAGE') }}
+        </span>
+        <SelectInput
+          v-model="form.default_stage_id"
+          :options="stageOptions"
+          :disabled="isFetching || !form.default_pipeline_id"
         />
       </label>
 

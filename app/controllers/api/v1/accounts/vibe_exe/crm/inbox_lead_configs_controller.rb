@@ -26,8 +26,8 @@ class Api::V1::Accounts::VibeExe::Crm::InboxLeadConfigsController < Api::V1::Acc
   end
 
   def config_params
-    params.permit(:lead_creation_mode, :default_pipeline_id, :default_owner_id, :default_team_id).tap do |permitted|
-      %i[default_pipeline_id default_owner_id default_team_id].each do |key|
+    params.permit(:lead_creation_mode, :default_pipeline_id, :default_stage_id, :default_owner_id, :default_team_id).tap do |permitted|
+      %i[default_pipeline_id default_stage_id default_owner_id default_team_id].each do |key|
         permitted[key] = nil if permitted[key].blank?
       end
     end
@@ -39,6 +39,7 @@ class Api::V1::Accounts::VibeExe::Crm::InboxLeadConfigsController < Api::V1::Acc
       inbox_id: @inbox.id,
       lead_creation_mode: @config.lead_creation_mode,
       default_pipeline_id: @config.default_pipeline_id,
+      default_stage_id: @config.default_stage_id,
       default_owner_id: @config.default_owner_id,
       default_team_id: @config.default_team_id
     }

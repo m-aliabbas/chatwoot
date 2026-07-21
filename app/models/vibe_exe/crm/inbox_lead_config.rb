@@ -34,6 +34,7 @@ class VibeExe::Crm::InboxLeadConfig < ApplicationRecord
   belongs_to :account
   belongs_to :inbox
   belongs_to :default_pipeline, class_name: 'VibeExe::Crm::Pipeline', optional: true
+  belongs_to :default_stage, class_name: 'VibeExe::Crm::PipelineStage', optional: true
   belongs_to :default_owner, class_name: 'User', optional: true
   belongs_to :default_team, class_name: 'Team', optional: true
 
@@ -47,6 +48,8 @@ class VibeExe::Crm::InboxLeadConfig < ApplicationRecord
   def validate_account_consistency
     errors.add(:inbox, :invalid) if inbox.present? && inbox.account_id != account_id
     errors.add(:default_pipeline, :invalid) if default_pipeline.present? && default_pipeline.account_id != account_id
+    errors.add(:default_stage, :invalid) if default_stage.present? && default_stage.account_id != account_id
+    errors.add(:default_stage, :invalid) if default_stage.present? && default_pipeline.present? && default_stage.pipeline_id != default_pipeline_id
     errors.add(:default_owner, :invalid) if default_owner.present? && default_owner.account_users.where(account_id: account_id).blank?
     errors.add(:default_team, :invalid) if default_team.present? && default_team.account_id != account_id
   end

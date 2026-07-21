@@ -5,6 +5,7 @@ import {
   CONVERSATION_PERMISSIONS,
 } from 'dashboard/constants/permissions.js';
 import VibeExeEmptyModulePage from './VibeExeEmptyModulePage.vue';
+import LeadWorkspace from './leads/LeadWorkspace.vue';
 
 export const routes = [
   {
@@ -15,7 +16,17 @@ export const routes = [
       permissions: ['administrator', 'agent', 'contact_manage'],
       vibeexeModule: 'LEADS',
     },
-    component: VibeExeEmptyModulePage,
+    component: LeadWorkspace,
+  },
+  {
+    path: frontendURL('accounts/:accountId/leads/:leadId'),
+    name: 'lead_show',
+    meta: {
+      featureFlag: FEATURE_FLAGS.CRM,
+      permissions: ['administrator', 'agent', 'contact_manage'],
+      vibeexeModule: 'LEADS',
+    },
+    component: LeadWorkspace,
   },
   {
     path: frontendURL('accounts/:accountId/tasks'),
