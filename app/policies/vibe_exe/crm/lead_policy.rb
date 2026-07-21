@@ -11,6 +11,18 @@ class VibeExe::Crm::LeadPolicy < ApplicationPolicy
     crm_user?
   end
 
+  def compatible?
+    index?
+  end
+
+  def link?
+    update?
+  end
+
+  def unlink?
+    destroy?
+  end
+
   def update?
     crm_user?
   end

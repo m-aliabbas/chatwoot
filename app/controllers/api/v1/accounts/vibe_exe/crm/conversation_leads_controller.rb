@@ -9,11 +9,11 @@ class Api::V1::Accounts::VibeExe::Crm::ConversationLeadsController < Api::V1::Ac
 
   def compatible
     authorize VibeExe::Crm::Lead
-    if config.never?
+    if inbox_lead_config.never?
       return render json: {
         leads: [],
         ambiguous: false,
-        lead_creation_mode: config.lead_creation_mode
+        lead_creation_mode: inbox_lead_config.lead_creation_mode
       }
     end
 
@@ -26,17 +26,17 @@ class Api::V1::Accounts::VibeExe::Crm::ConversationLeadsController < Api::V1::Ac
     render json: {
       leads: leads.map { |lead| lead_summary(lead) },
       ambiguous: leads.many?,
-      lead_creation_mode: config.lead_creation_mode
+      lead_creation_mode: inbox_lead_config.lead_creation_mode
     }
   end
 
   def create
     authorize VibeExe::Crm::Lead
-    return render_disabled_response if config.never?
+    return render_disabled_response if inbox_lead_config.never?
 
     lead = VibeExe::Crm::CreateFromConversationService.new(
       conversation: @conversation,
-      config: config,
+      config: inbox_lead_config,
       created_by: Current.user,
       source: 'manual'
     ).perform
@@ -45,7 +45,7 @@ class Api::V1::Accounts::VibeExe::Crm::ConversationLeadsController < Api::V1::Ac
   end
 
   def link
-    return render_disabled_response if config.never?
+    return render_disabled_response if inbox_lead_config.never?
 
     lead = VibeExe::Crm::Lead.find_by!(account: Current.account, id: params[:lead_id])
     authorize lead
@@ -81,11 +81,15 @@ class Api::V1::Accounts::VibeExe::Crm::ConversationLeadsController < Api::V1::Ac
   private
 
   def set_conversation
-    @conversation = Current.account.conversations.find_by!(display_id: params[:conversation_id])
+    @conversation = Current.account.conversations.find_by!(display_id: conversation_id_param)
   end
 
-  def config
-    @config ||= VibeExe::Crm::InboxLeadConfigResolver.new(inbox: @conversation.inbox).perform
+  def inbox_lead_config
+    @inbox_lead_config ||= VibeExe::Crm::InboxLeadConfigResolver.new(inbox: @conversation.inbox).perform
+  end
+
+  def conversation_id_param
+    params.require(:conversation_id)
   end
 
   def render_disabled_response
@@ -102,7 +106,7 @@ class Api::V1::Accounts::VibeExe::Crm::ConversationLeadsController < Api::V1::Ac
     {
       leads: leads.map { |lead| lead_summary(lead) },
       ambiguous: ambiguous_match?,
-      lead_creation_mode: config.lead_creation_mode
+      lead_creation_mode: inbox_lead_config.lead_creation_mode
     }
   end
 

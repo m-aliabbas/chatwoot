@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Website Lead Test</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        background: #f8fafc;
+        color: #111827;
+        display: grid;
+        place-items: center;
+      }
+
+      main {
+        max-width: 720px;
+        padding: 32px;
+      }
+
+      pre {
+        padding: 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: white;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Website Lead Test</h1>
+      <p>Widget debug status:</p>
+      <pre id="log">Starting...</pre>
+    </main>
+
+    <script>
+      const log = message => {
+        const el = document.getElementById('log');
+        el.textContent += '\n' + message;
+        console.log(message);
+      };
+
+      window.chatwootSettings = {
+        position: 'right',
+        type: 'standard',
+        launcherTitle: 'Chat',
+      };
+
+      (function (d, t) {
+        var BASE_URL = 'http://localhost:3000';
+        var WEBSITE_TOKEN = 'B1aDa3dGfDkJ8qcpJJ5QPGcJ';
+
+        log('Loading SDK from ' + BASE_URL + '/packs/js/sdk.js');
+
+        var g = d.createElement(t);
+        var s = d.getElementsByTagName(t)[0];
+
+        g.src = BASE_URL + '/packs/js/sdk.js';
+        g.async = true;
+
+        g.onerror = function () {
+          log('ERROR: SDK failed to load');
+        };
+
+        g.onload = function () {
+          log('SDK loaded');
+
+          if (!window.chatwootSDK) {
+            log('ERROR: window.chatwootSDK missing');
+            return;
+          }
+
+          window.chatwootSDK.run({
+            websiteToken: WEBSITE_TOKEN,
+            baseUrl: BASE_URL,
+          });
+
+          log('chatwootSDK.run called');
+        };
+
+        s.parentNode.insertBefore(g, s);
+      })(document, 'script');
+    </script>
+  </body>
+</html>

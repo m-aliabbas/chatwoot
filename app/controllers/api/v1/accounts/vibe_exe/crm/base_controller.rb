@@ -1,7 +1,13 @@
 class Api::V1::Accounts::VibeExe::Crm::BaseController < Api::V1::Accounts::BaseController
+  rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
+
   before_action :ensure_crm_enabled
 
   private
+
+  def render_not_found
+    render json: { error: 'Resource could not be found' }, status: :not_found
+  end
 
   def ensure_crm_enabled
     return if Current.account.feature_enabled?('crm')

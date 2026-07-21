@@ -274,7 +274,7 @@ Rails.application.routes.draw do
               resources :inboxes, only: [] do
                 resource :lead_config, only: [:show, :update], controller: 'inbox_lead_configs'
               end
-              resources :conversations, only: [], param: :conversation_id do
+              scope 'conversations/:conversation_id', as: 'conversation' do
                 resources :leads, only: [:index, :create], controller: 'conversation_leads' do
                   collection do
                     get :compatible
