@@ -31,3 +31,7 @@ VibeExe guidance:
 - Record meaningful upstream-file modifications in `docs/upstream-changes.md`.
 
 When completing a change, report files changed, tests actually run, unresolved risks, and any upstream-sensitive modifications.
+
+Do not modify Docker, Compose, environment, dependency, or database setup while
+implementing product features. Keep infrastructure unchanged and report any
+runtime steps separately. 

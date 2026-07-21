@@ -45,7 +45,7 @@ const redirectFolderConversationIfUnavailable = async (to, _from, next) => {
 export default {
   routes: [
     {
-      path: frontendURL('accounts/:accountId/dashboard'),
+      path: frontendURL('accounts/:accountId/inbox'),
       name: 'home',
       meta: {
         permissions: CONVERSATION_PERMISSIONS,

@@ -1,5 +1,7 @@
 import settings from './settings/settings.routes';
 import conversation from './conversation/conversation.routes';
+import { routes as overviewRoutes } from './overview/overview.routes';
+import { routes as vibeexeRoutes } from './vibeexe/vibeexe.routes';
 import { routes as searchRoutes } from '../../modules/search/search.routes';
 import { routes as contactRoutes } from './contacts/routes';
 import { routes as companyRoutes } from './companies/routes';
@@ -23,6 +25,8 @@ export default {
       children: [
         ...captainRoutes,
         ...inboxRoutes,
+        ...overviewRoutes,
+        ...vibeexeRoutes,
         ...conversation.routes,
         ...settings.routes,
         ...contactRoutes,

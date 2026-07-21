@@ -113,6 +113,24 @@ Practical checklist for any change impacting core logic or public APIs
 - Tests: Add Enterprise-specific specs under `spec/enterprise`, mirroring OSS spec layout where applicable.
 - When modifying existing OSS features for Enterprise-only behavior, add an Enterprise module (via `prepend_mod_with`/`include_mod_with`) instead of editing OSS files directly—especially for policies, controllers, and services. For Enterprise-exclusive features, place code directly under `enterprise/`.
 
+## Runtime and infrastructure boundary
+
+Coding agents must not manage the local runtime environment.
+
+Unless the user explicitly requests it, agents must not:
+
+- edit Docker or Docker Compose files
+- edit environment files
+- change ports, volumes, or service commands
+- build, start, stop, or restart containers
+- create, migrate, seed, reset, or delete databases
+- install dependencies
+- remove caches or volumes
+
+Agents may report the exact runtime commands needed, but the user will execute
+them separately with human guidance.
+
+
 ## Branding / White-labeling note
 
 - For user-facing strings that currently contain "Chatwoot" but should adapt to branded/self-hosted installs, prefer applying `replaceInstallationName` from `shared/composables/useBranding` in the UI layer (for example tooltip and suggestion labels) instead of adding hardcoded brand-specific copy.

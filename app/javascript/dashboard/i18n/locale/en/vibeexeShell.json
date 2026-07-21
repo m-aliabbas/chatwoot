@@ -1,0 +1,63 @@
+{
+  "VIBEEXE_SHELL": {
+    "NAV": {
+      "OVERVIEW": "Overview",
+      "INBOX": "Inbox",
+      "CONTACTS": "Contacts",
+      "LEADS": "Leads",
+      "TASKS": "Tasks",
+      "REPORTS": "Reports",
+      "AUTOMATION": "Automation",
+      "CAMPAIGNS": "Campaigns",
+      "HELP_CENTER": "Help Center",
+      "NOTIFICATIONS": "Notifications",
+      "PROFILE": "Profile",
+      "SETTINGS": "Settings"
+    },
+    "SECONDARY": "More"
+  },
+  "VIBEEXE_OVERVIEW": {
+    "TITLE": "Welcome to VibeExe",
+    "TITLE_WITH_NAME": "Welcome back, {name}",
+    "SUBTITLE": "Keep the workspace ready for conversations, contacts, and team follow-up.",
+    "SUMMARY": {
+      "OPEN": "Open conversations",
+      "UNASSIGNED": "Unassigned conversations"
+    },
+    "CHECKLIST": {
+      "TITLE": "Workspace setup",
+      "PROGRESS": "{completed}/{total} complete",
+      "WORKSPACE_PROFILE": "Complete workspace profile",
+      "COMPANY_LOGO": "Upload company logo",
+      "CONNECT_CHANNEL": "Connect a messaging channel",
+      "INVITE_TEAMMATE": "Invite a teammate",
+      "CONFIGURE_ASSIGNMENT": "Configure inbox assignment",
+      "FIRST_CONVERSATION": "Send or receive the first conversation"
+    },
+    "QUICK_ACTIONS": {
+      "TITLE": "Quick actions",
+      "OPEN_INBOX": "Open inbox",
+      "ADD_CONTACT": "Add contact",
+      "CONNECT_CHANNEL": "Connect channel",
+      "INVITE_TEAMMATE": "Invite teammate"
+    },
+    "RECENT_CONTACTS": {
+      "TITLE": "Recent contacts",
+      "EMPTY": "Contacts will appear here after the first import, conversation, or manual contact creation."
+    }
+  },
+  "VIBEEXE_EMPTY": {
+    "LEADS": {
+      "TITLE": "Leads",
+      "SUBTITLE": "A focused leads workspace will be added in a later phase.",
+      "HEADING": "Leads are not configured yet",
+      "DESCRIPTION": "Use Contacts for current customer records while the dedicated leads workflow remains hidden behind the Phase 4 shell."
+    },
+    "TASKS": {
+      "TITLE": "Tasks",
+      "SUBTITLE": "A lightweight task workspace will be added in a later phase.",
+      "HEADING": "Tasks are not configured yet",
+      "DESCRIPTION": "Use Inbox assignments and conversation follow-up for current work while the dedicated task workflow is prepared."
+    }
+  }
+}
