@@ -1,0 +1,37 @@
+{
+  "VIBEEXE_CRM": {
+    "INBOX_TAB": "CRM",
+    "LEAD_CONFIG": {
+      "TITLE": "Lead creation",
+      "DESCRIPTION": "Choose how this inbox should handle new customer conversations in CRM.",
+      "MODE": "Creation mode",
+      "MODE_NEVER": "Never",
+      "MODE_MANUAL": "Manual",
+      "MODE_AUTOMATIC": "Automatic",
+      "PIPELINE": "Default pipeline",
+      "OWNER": "Default owner",
+      "TEAM": "Default team",
+      "NONE": "None",
+      "SAVE": "Save settings",
+      "SUCCESS": "Lead creation settings updated",
+      "ERROR": "Could not update lead creation settings"
+    },
+    "LEADS": {
+      "TITLE": "Lead",
+      "LINKED_TITLE": "Linked leads",
+      "CREATE": "Create lead",
+      "LINK": "Link lead",
+      "OPEN": "Open",
+      "UNLINK": "Unlink",
+      "COMPATIBLE_TITLE": "Compatible leads",
+      "AMBIGUOUS": "Multiple open leads match this contact. Choose the correct lead to link.",
+      "EMPTY": "No lead is linked to this conversation.",
+      "NO_COMPATIBLE": "No compatible open leads found.",
+      "CREATED": "Lead created",
+      "LINKED": "Lead linked",
+      "UNLINKED": "Lead unlinked",
+      "LOADING": "Loading leads",
+      "ERROR": "Could not update the linked lead"
+    }
+  }
+}

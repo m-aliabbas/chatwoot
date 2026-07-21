@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_21_000000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -446,8 +446,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
     t.integer "status", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
     t.index ["account_id", "assistant_id", "status", "language"], name: "idx_cap_faq_suggestions_on_account_assistant_status_language"
+    t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
     t.index ["assistant_id"], name: "index_captain_faq_suggestions_on_assistant_id"
     t.index ["embedding"], name: "vector_idx_captain_faq_suggestions_embedding", opclass: :vector_cosine_ops, using: :ivfflat
   end
@@ -988,10 +988,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "inbox_id"
-    t.index ["account_id", "name", "template_type", "locale"], name: "index_email_templates_on_account_scope", unique: true, where: "(account_id IS NOT NULL) AND (inbox_id IS NULL)"
+    t.index ["account_id", "name", "template_type", "locale"], name: "index_email_templates_on_account_scope", unique: true, where: "((account_id IS NOT NULL) AND (inbox_id IS NULL))"
     t.index ["inbox_id", "name", "template_type", "locale"], name: "index_email_templates_on_inbox_scope", unique: true, where: "(inbox_id IS NOT NULL)"
     t.index ["inbox_id"], name: "index_email_templates_on_inbox_id"
-    t.index ["name", "template_type", "locale"], name: "index_email_templates_on_installation_scope", unique: true, where: "(account_id IS NULL) AND (inbox_id IS NULL)"
+    t.index ["name", "template_type", "locale"], name: "index_email_templates_on_installation_scope", unique: true, where: "((account_id IS NULL) AND (inbox_id IS NULL))"
   end
 
   create_table "folders", force: :cascade do |t|
@@ -1465,6 +1465,114 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
     t.index ["uid", "provider"], name: "index_users_on_uid_and_provider", unique: true
   end
 
+  create_table "vibeexe_crm_inbox_lead_configs", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.integer "lead_creation_mode", default: 1, null: false
+    t.bigint "default_pipeline_id"
+    t.bigint "default_owner_id"
+    t.bigint "default_team_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_account_id"
+    t.index ["default_owner_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_owner_id"
+    t.index ["default_pipeline_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_pipeline_id"
+    t.index ["default_team_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_team_id"
+    t.index ["inbox_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_inbox_id", unique: true
+  end
+
+  create_table "vibeexe_crm_lead_activities", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "lead_id"
+    t.bigint "conversation_id"
+    t.bigint "user_id"
+    t.string "activity_type", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "occurred_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "conversation_id"], name: "index_vibeexe_lead_activities_on_conversation_lookup"
+    t.index ["account_id", "lead_id"], name: "index_vibeexe_lead_activities_on_lead_lookup"
+    t.index ["account_id"], name: "index_vibeexe_crm_lead_activities_on_account_id"
+    t.index ["conversation_id"], name: "index_vibeexe_crm_lead_activities_on_conversation_id"
+    t.index ["lead_id"], name: "index_vibeexe_crm_lead_activities_on_lead_id"
+    t.index ["user_id"], name: "index_vibeexe_crm_lead_activities_on_user_id"
+  end
+
+  create_table "vibeexe_crm_lead_conversations", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "lead_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "linked_by_id"
+    t.string "source", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "conversation_id"], name: "index_vibeexe_lead_conversations_on_conversation_lookup"
+    t.index ["account_id"], name: "index_vibeexe_crm_lead_conversations_on_account_id"
+    t.index ["conversation_id"], name: "index_vibeexe_crm_lead_conversations_on_conversation_id"
+    t.index ["lead_id", "conversation_id"], name: "index_vibeexe_lead_conversations_on_lead_and_conversation", unique: true
+    t.index ["lead_id"], name: "index_vibeexe_crm_lead_conversations_on_lead_id"
+    t.index ["linked_by_id"], name: "index_vibeexe_crm_lead_conversations_on_linked_by_id"
+  end
+
+  create_table "vibeexe_crm_leads", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "contact_id", null: false
+    t.bigint "pipeline_id", null: false
+    t.bigint "pipeline_stage_id", null: false
+    t.bigint "owner_id"
+    t.bigint "team_id"
+    t.bigint "created_by_id"
+    t.string "title", null: false
+    t.string "source", null: false
+    t.integer "status", default: 0, null: false
+    t.integer "priority", default: 1, null: false
+    t.datetime "archived_at"
+    t.datetime "closed_at"
+    t.string "closed_status"
+    t.string "closed_reason"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "contact_id", "status", "archived_at"], name: "index_vibeexe_leads_on_open_contact_lookup"
+    t.index ["account_id", "pipeline_id", "pipeline_stage_id"], name: "index_vibeexe_leads_on_pipeline_lookup"
+    t.index ["account_id"], name: "index_vibeexe_crm_leads_on_account_id"
+    t.index ["contact_id"], name: "index_vibeexe_crm_leads_on_contact_id"
+    t.index ["created_by_id"], name: "index_vibeexe_crm_leads_on_created_by_id"
+    t.index ["owner_id"], name: "index_vibeexe_crm_leads_on_owner_id"
+    t.index ["pipeline_id"], name: "index_vibeexe_crm_leads_on_pipeline_id"
+    t.index ["pipeline_stage_id"], name: "index_vibeexe_crm_leads_on_pipeline_stage_id"
+    t.index ["team_id"], name: "index_vibeexe_crm_leads_on_team_id"
+  end
+
+  create_table "vibeexe_crm_pipeline_stages", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_id", null: false
+    t.string "name", null: false
+    t.boolean "default", default: false, null: false
+    t.boolean "active", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_vibeexe_crm_pipeline_stages_on_account_id"
+    t.index ["pipeline_id", "default"], name: "index_vibeexe_crm_pipeline_stages_on_pipeline_id_and_default"
+    t.index ["pipeline_id", "name"], name: "index_vibeexe_crm_pipeline_stages_on_pipeline_id_and_name", unique: true
+    t.index ["pipeline_id"], name: "index_vibeexe_crm_pipeline_stages_on_pipeline_id"
+  end
+
+  create_table "vibeexe_crm_pipelines", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.boolean "default", default: false, null: false
+    t.boolean "active", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "default"], name: "index_vibeexe_crm_pipelines_on_account_id_and_default"
+    t.index ["account_id", "name"], name: "index_vibeexe_crm_pipelines_on_account_id_and_name", unique: true
+    t.index ["account_id"], name: "index_vibeexe_crm_pipelines_on_account_id"
+  end
+
   create_table "webhooks", force: :cascade do |t|
     t.integer "account_id"
     t.integer "inbox_id"
@@ -1498,6 +1606,29 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
   add_foreign_key "user_sessions", "users"
+  add_foreign_key "vibeexe_crm_inbox_lead_configs", "accounts"
+  add_foreign_key "vibeexe_crm_inbox_lead_configs", "inboxes"
+  add_foreign_key "vibeexe_crm_inbox_lead_configs", "teams", column: "default_team_id"
+  add_foreign_key "vibeexe_crm_inbox_lead_configs", "users", column: "default_owner_id"
+  add_foreign_key "vibeexe_crm_inbox_lead_configs", "vibeexe_crm_pipelines", column: "default_pipeline_id"
+  add_foreign_key "vibeexe_crm_lead_activities", "accounts"
+  add_foreign_key "vibeexe_crm_lead_activities", "conversations"
+  add_foreign_key "vibeexe_crm_lead_activities", "users"
+  add_foreign_key "vibeexe_crm_lead_activities", "vibeexe_crm_leads", column: "lead_id"
+  add_foreign_key "vibeexe_crm_lead_conversations", "accounts"
+  add_foreign_key "vibeexe_crm_lead_conversations", "conversations"
+  add_foreign_key "vibeexe_crm_lead_conversations", "users", column: "linked_by_id"
+  add_foreign_key "vibeexe_crm_lead_conversations", "vibeexe_crm_leads", column: "lead_id"
+  add_foreign_key "vibeexe_crm_leads", "accounts"
+  add_foreign_key "vibeexe_crm_leads", "contacts"
+  add_foreign_key "vibeexe_crm_leads", "teams"
+  add_foreign_key "vibeexe_crm_leads", "users", column: "created_by_id"
+  add_foreign_key "vibeexe_crm_leads", "users", column: "owner_id"
+  add_foreign_key "vibeexe_crm_leads", "vibeexe_crm_pipeline_stages", column: "pipeline_stage_id"
+  add_foreign_key "vibeexe_crm_leads", "vibeexe_crm_pipelines", column: "pipeline_id"
+  add_foreign_key "vibeexe_crm_pipeline_stages", "accounts"
+  add_foreign_key "vibeexe_crm_pipeline_stages", "vibeexe_crm_pipelines", column: "pipeline_id"
+  add_foreign_key "vibeexe_crm_pipelines", "accounts"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).

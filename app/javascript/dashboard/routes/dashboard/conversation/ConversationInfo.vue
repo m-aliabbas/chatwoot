@@ -1,8 +1,11 @@
 <script setup>
 import { computed } from 'vue';
 import { getLanguageName } from 'dashboard/components/widgets/conversation/advancedFilterItems/languages';
+import { useStore } from 'dashboard/composables/store';
+import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import ContactDetailsItem from './ContactDetailsItem.vue';
 import CustomAttributes from './customAttributes/CustomAttributes.vue';
+import LinkedLeadSection from './components/LinkedLeadSection.vue';
 
 const props = defineProps({
   conversationAttributes: {
@@ -13,8 +16,21 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  conversationId: {
+    type: [String, Number],
+    required: true,
+  },
 });
 
+const store = useStore();
+
+const accountId = computed(() => store.getters.getCurrentAccountId);
+const isCrmEnabled = computed(() =>
+  store.getters['accounts/isFeatureEnabledonAccount'](
+    accountId.value,
+    FEATURE_FLAGS.CRM
+  )
+);
 const referer = computed(() => props.conversationAttributes.referer);
 const initiatedAt = computed(
   () => props.conversationAttributes.initiated_at?.timestamp
@@ -86,6 +102,10 @@ const staticElements = computed(() =>
 
 <template>
   <div class="conversation--details">
+    <LinkedLeadSection
+      v-if="isCrmEnabled"
+      :conversation-id="conversationId"
+    />
     <CustomAttributes
       :static-elements="staticElements"
       attribute-class="conversation--attribute"

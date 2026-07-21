@@ -19,6 +19,7 @@ class AsyncDispatcher < BaseDispatcher
       ParticipationListener.instance,
       Conversations::UnreadCounts::Listener.instance,
       ReportingEventListener.instance,
+      VibeExe::Crm::InboundLeadListener.instance,
       WebhookListener.instance
     ]
   end

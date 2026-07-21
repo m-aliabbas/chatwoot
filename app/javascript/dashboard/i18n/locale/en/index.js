@@ -43,6 +43,7 @@ import onboarding from './onboarding.json';
 import sessionLimit from './sessionLimit.json';
 import yearInReview from './yearInReview.json';
 import vibeexeShell from './vibeexeShell.json';
+import vibeexeCrm from './vibeexeCrm.json';
 
 export default {
   ...advancedFilters,
@@ -90,4 +91,5 @@ export default {
   ...sessionLimit,
   ...yearInReview,
   ...vibeexeShell,
+  ...vibeexeCrm,
 };

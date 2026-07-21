@@ -268,6 +268,25 @@ Rails.application.routes.draw do
           resources :custom_attribute_definitions, only: [:index, :show, :create, :update, :destroy]
           resources :custom_filters, only: [:index, :show, :create, :update, :destroy]
           resource :branded_email_layout, only: [:show, :update]
+          namespace :vibe_exe, path: 'vibeexe' do
+            namespace :crm do
+              resources :pipelines, only: [:index]
+              resources :inboxes, only: [] do
+                resource :lead_config, only: [:show, :update], controller: 'inbox_lead_configs'
+              end
+              resources :conversations, only: [], param: :conversation_id do
+                resources :leads, only: [:index, :create], controller: 'conversation_leads' do
+                  collection do
+                    get :compatible
+                    post :link
+                  end
+                  member do
+                    delete :unlink
+                  end
+                end
+              end
+            end
+          end
           resources :inboxes, only: [:index, :show, :create, :update, :destroy] do
             get :assignable_agents, on: :member
             get :campaigns, on: :member
