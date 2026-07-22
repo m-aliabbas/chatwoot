@@ -10,10 +10,18 @@ class Api::V1::Accounts::VibeExe::Crm::TasksController < Api::V1::Accounts::Vibe
   def index
     authorize VibeExe::Crm::Task
     tasks = filtered_tasks
+    summary_tasks = filtered_tasks(include_worklist: false).reorder(nil)
     paginated_tasks = tasks.page(current_page).per(RESULTS_PER_PAGE)
 
     render json: {
       tasks: paginated_tasks.map { |task| task_payload(task) },
+      summary: {
+        total_count: summary_tasks.count,
+        pending_count: summary_tasks.pending.count,
+        overdue_count: summary_tasks.pending.where('due_at < ?', Time.current).count,
+        due_today_count: summary_tasks.pending.where(due_at: Time.zone.today.all_day).count,
+        completed_count: summary_tasks.completed.count
+      },
       meta: { current_page: current_page, total_count: tasks.count, per_page: RESULTS_PER_PAGE }
     }
   end
@@ -81,18 +89,18 @@ class Api::V1::Accounts::VibeExe::Crm::TasksController < Api::V1::Accounts::Vibe
       .where(account: Current.account)
   end
 
-  def filtered_tasks
+  def filtered_tasks(include_worklist: true)
     scope = task_scope
     scope = scope.where(assignee_id: params[:assignee_id]) if params[:assignee_id].present?
     scope = scope.where(creator_id: params[:created_by_id]) if params[:created_by_id].present?
     scope = scope.where(lead_id: params[:lead_id]) if params[:lead_id].present?
-    scope = scope.where(status: params[:status]) if params[:status].present?
+    scope = scope.where(status: params[:status]) if include_worklist && params[:status].present?
     scope = scope.where(task_type: params[:task_type]) if params[:task_type].present?
     scope = scope.where(priority: params[:priority]) if params[:priority].present?
     scope = scope.where('due_at >= ?', Time.zone.parse(params[:due_from]).beginning_of_day) if params[:due_from].present?
     scope = scope.where('due_at <= ?', Time.zone.parse(params[:due_to]).end_of_day) if params[:due_to].present?
-    scope = scope.overdue if params[:overdue].to_s == 'true'
-    scope = scope.due_today if params[:due_today].to_s == 'true'
+    scope = scope.overdue if include_worklist && params[:overdue].to_s == 'true'
+    scope = scope.due_today if include_worklist && params[:due_today].to_s == 'true'
     scope = apply_search(scope)
     apply_sort(scope)
   end

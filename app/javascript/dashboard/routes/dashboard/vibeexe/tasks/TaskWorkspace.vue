@@ -32,6 +32,14 @@ const isSaving = ref(false);
 const errorMessage = ref('');
 const currentPage = ref(1);
 const totalCount = ref(0);
+const taskScope = ref('mine');
+const taskSummary = ref({
+  total_count: 0,
+  pending_count: 0,
+  overdue_count: 0,
+  due_today_count: 0,
+  completed_count: 0,
+});
 const formDialog = ref(null);
 const cancelDialog = ref(null);
 const completeDialog = ref(null);
@@ -51,7 +59,6 @@ const filters = ref({
   status: 'pending',
   task_type: '',
   priority: '',
-  lead_id: '',
   created_by_id: '',
   due_from: '',
   due_to: '',
@@ -124,6 +131,7 @@ const fetchTasks = async () => {
     const { data } = await VibeExeCrmAPI.getTasks({ ...cleanParams(filters.value), page: currentPage.value });
     tasks.value = data.tasks || [];
     totalCount.value = data.meta?.total_count || 0;
+    taskSummary.value = data.summary || taskSummary.value;
   } catch (error) {
     errorMessage.value = error.response?.data?.error || t('VIBEEXE_CRM.TASKS.LOAD_ERROR');
   } finally {
@@ -135,7 +143,12 @@ const showView = view => {
   filters.value.overdue = view === 'overdue' ? 'true' : '';
   filters.value.due_today = view === 'today' ? 'true' : '';
   filters.value.status = view === 'completed' ? 'completed' : view === 'all' ? '' : 'pending';
-  filters.value.assignee_id = view === 'mine' ? currentUser.value?.id : '';
+  currentPage.value = 1;
+};
+
+const showScope = scope => {
+  taskScope.value = scope;
+  filters.value.assignee_id = scope === 'mine' ? currentUser.value?.id : '';
   currentPage.value = 1;
 };
 
@@ -276,14 +289,19 @@ onMounted(async () => {
     <div class="flex flex-col gap-5">
       <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex flex-wrap gap-2">
-          <NextButton outline slate size="sm" :label="$t('VIBEEXE_CRM.TASKS.MY_TASKS')" @click="showView('mine')" />
-          <NextButton outline slate size="sm" :label="$t('VIBEEXE_CRM.TASKS.ALL_TASKS')" @click="showView('all')" />
-          <NextButton outline ruby size="sm" :label="$t('VIBEEXE_CRM.TASKS.OVERDUE')" @click="showView('overdue')" />
-          <NextButton outline amber size="sm" :label="$t('VIBEEXE_CRM.TASKS.DUE_TODAY')" @click="showView('today')" />
-          <NextButton outline teal size="sm" :label="$t('VIBEEXE_CRM.TASKS.COMPLETED')" @click="showView('completed')" />
+          <NextButton :variant="taskScope === 'mine' ? 'faded' : 'ghost'" slate size="sm" :label="$t('VIBEEXE_CRM.TASKS.MY_TASKS')" @click="showScope('mine')" />
+          <NextButton :variant="taskScope === 'all' ? 'faded' : 'ghost'" slate size="sm" :label="$t('VIBEEXE_CRM.TASKS.ALL_TASKS')" @click="showScope('all')" />
         </div>
         <NextButton icon="i-lucide-plus" :label="$t('VIBEEXE_CRM.TASKS.CREATE')" @click="openForm()" />
       </header>
+
+      <section class="grid grid-cols-2 gap-3 lg:grid-cols-5" :aria-label="$t('VIBEEXE_CRM.TASKS.SUMMARY')">
+        <button class="rounded-xl border border-n-weak bg-n-surface-1 p-4 text-left transition hover:border-n-strong hover:bg-n-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-blue-9" type="button" @click="showView('all')"><span class="block text-xs font-medium text-n-slate-10">{{ $t('VIBEEXE_CRM.TASKS.ALL_TASKS') }}</span><strong class="mt-1 block text-2xl font-semibold text-n-slate-12">{{ taskSummary.total_count }}</strong></button>
+        <button class="rounded-xl border border-n-weak bg-n-surface-1 p-4 text-left transition hover:border-n-strong hover:bg-n-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-blue-9" type="button" @click="showView('pending')"><span class="block text-xs font-medium text-n-slate-10">{{ $t('VIBEEXE_CRM.TASKS.PENDING') }}</span><strong class="mt-1 block text-2xl font-semibold text-n-slate-12">{{ taskSummary.pending_count }}</strong></button>
+        <button class="rounded-xl border border-n-ruby-7 bg-n-ruby-2 p-4 text-left transition hover:border-n-ruby-8 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-ruby-9" type="button" @click="showView('overdue')"><span class="block text-xs font-medium text-n-ruby-11">{{ $t('VIBEEXE_CRM.TASKS.OVERDUE') }}</span><strong class="mt-1 block text-2xl font-semibold text-n-ruby-12">{{ taskSummary.overdue_count }}</strong></button>
+        <button class="rounded-xl border border-n-amber-7 bg-n-amber-2 p-4 text-left transition hover:border-n-amber-8 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-amber-9" type="button" @click="showView('today')"><span class="block text-xs font-medium text-n-amber-11">{{ $t('VIBEEXE_CRM.TASKS.DUE_TODAY') }}</span><strong class="mt-1 block text-2xl font-semibold text-n-amber-12">{{ taskSummary.due_today_count }}</strong></button>
+        <button class="col-span-2 rounded-xl border border-n-teal-7 bg-n-teal-2 p-4 text-left transition hover:border-n-teal-8 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-teal-9 lg:col-span-1" type="button" @click="showView('completed')"><span class="block text-xs font-medium text-n-teal-11">{{ $t('VIBEEXE_CRM.TASKS.COMPLETED') }}</span><strong class="mt-1 block text-2xl font-semibold text-n-teal-12">{{ taskSummary.completed_count }}</strong></button>
+      </section>
 
       <section class="grid grid-cols-1 gap-3 rounded-xl border border-n-weak bg-n-surface-1 p-4 md:grid-cols-2 xl:grid-cols-5">
         <Input v-model="filters.q" size="sm" :label="$t('VIBEEXE_CRM.TASKS.SEARCH')" :placeholder="$t('VIBEEXE_CRM.TASKS.SEARCH_PLACEHOLDER')" />
@@ -291,7 +309,6 @@ onMounted(async () => {
         <label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.TASKS.TYPE') }}<SelectInput v-model="filters.task_type" :options="typeOptions" /></label>
         <label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.TASKS.PRIORITY') }}<SelectInput v-model="filters.priority" :options="priorityOptions" /></label>
         <label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.TASKS.STATUS') }}<SelectInput v-model="filters.status" :options="[{ value: '', label: $t('VIBEEXE_CRM.TASKS.ALL_STATUSES') }, { value: 'pending', label: $t('VIBEEXE_CRM.TASKS.PENDING') }, { value: 'completed', label: $t('VIBEEXE_CRM.TASKS.COMPLETED') }, { value: 'cancelled', label: $t('VIBEEXE_CRM.TASKS.CANCELLED') }]" /></label>
-        <label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11 md:col-span-2">{{ $t('VIBEEXE_CRM.TASKS.LEAD') }}<LeadSelector v-model="filters.lead_id" /></label>
         <label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.TASKS.CREATED_BY') }}<SelectInput v-model="filters.created_by_id" :options="creatorOptions" /></label>
         <Input v-model="filters.due_from" type="date" :label="$t('VIBEEXE_CRM.TASKS.DUE_FROM')" />
         <Input v-model="filters.due_to" type="date" :label="$t('VIBEEXE_CRM.TASKS.DUE_TO')" />
@@ -302,7 +319,11 @@ onMounted(async () => {
       <p v-else-if="!tasks.length" class="rounded-xl border border-n-weak bg-n-surface-1 p-12 text-center text-sm text-n-slate-10">{{ $t('VIBEEXE_CRM.TASKS.EMPTY') }}</p>
 
       <div v-else class="overflow-x-auto rounded-xl border border-n-weak bg-n-surface-1">
-        <BaseTable :headers="headers" :items="tasks">
+        <BaseTable
+          class="ltr:[&_th:first-child]:pl-4 ltr:[&_td:first-child]:pl-4 rtl:[&_th:first-child]:pr-4 rtl:[&_td:first-child]:pr-4"
+          :headers="headers"
+          :items="tasks"
+        >
           <template #row="{ items }">
             <BaseTableRow v-for="task in items" :key="task.id" :item="task" class="transition-colors hover:bg-n-surface-2">
               <BaseTableCell><p class="mb-1 font-medium text-n-slate-12">{{ task.title }}</p><div class="flex flex-wrap items-center gap-2"><VibeExeCrmBadge :value="task.priority" /><span v-if="task.attachments?.length" class="inline-flex items-center gap-1 text-xs text-n-slate-10"><i class="i-lucide-paperclip size-3" />{{ task.attachments.length }}</span></div></BaseTableCell>
@@ -315,8 +336,8 @@ onMounted(async () => {
             </BaseTableRow>
           </template>
         </BaseTable>
+        <PaginationFooter v-if="totalCount" v-model:current-page="currentPage" :total-items="totalCount" :items-per-page="25" />
       </div>
-      <PaginationFooter v-if="totalCount" v-model:current-page="currentPage" :total-items="totalCount" :items-per-page="25" />
     </div>
 
     <Dialog ref="formDialog" width="2xl" overflow-y-auto :title="editingTask ? $t('VIBEEXE_CRM.TASKS.EDIT_TASK') : $t('VIBEEXE_CRM.TASKS.CREATE_TASK')" :confirm-button-label="$t('VIBEEXE_CRM.TASKS.SAVE')" :disable-confirm-button="!isFormValid || isUploading" :is-loading="isSaving" @confirm="saveTask">

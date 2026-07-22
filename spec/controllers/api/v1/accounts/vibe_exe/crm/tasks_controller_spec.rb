@@ -85,6 +85,11 @@ RSpec.describe 'VibeExe CRM Tasks API', type: :request do
 
     expect(response).to have_http_status(:success)
     expect(response.parsed_body['tasks'].pluck('id')).to eq([task.id])
+    expect(response.parsed_body['summary']).to include(
+      'total_count' => 1,
+      'pending_count' => 1,
+      'completed_count' => 0
+    )
   end
 
   it 'completes idempotently with a completion note' do

@@ -18,10 +18,15 @@ class Api::V1::Accounts::VibeExe::Crm::LeadsController < Api::V1::Accounts::Vibe
     authorize VibeExe::Crm::Lead
 
     leads = filtered_leads
+    summary_leads = filtered_leads(include_stage: false)
     paginated_leads = leads.page(current_page).per(RESULTS_PER_PAGE)
 
     render json: {
       leads: paginated_leads.map { |lead| lead_summary(lead) },
+      summary: {
+        total_count: summary_leads.count,
+        stage_counts: summary_leads.reorder(nil).group(:pipeline_stage_id).count
+      },
       meta: {
         current_page: current_page,
         total_count: leads.count,
@@ -114,13 +119,13 @@ class Api::V1::Accounts::VibeExe::Crm::LeadsController < Api::V1::Accounts::Vibe
             .find_by!(account: Current.account, id: params[:id])
   end
 
-  def filtered_leads
+  def filtered_leads(include_stage: true)
     scope = VibeExe::Crm::Lead
             .includes(:contact, :pipeline, :pipeline_stage, :owner, :team, :labels)
             .where(account: Current.account)
     scope = scope.active unless params[:include_archived].to_s == 'true'
     scope = scope.where(pipeline_id: params[:pipeline_id]) if params[:pipeline_id].present?
-    scope = scope.where(pipeline_stage_id: params[:stage_id]) if params[:stage_id].present?
+    scope = scope.where(pipeline_stage_id: params[:stage_id]) if include_stage && params[:stage_id].present?
     scope = scope.where(owner_id: params[:owner_id]) if params[:owner_id].present?
     scope = scope.where(team_id: params[:team_id]) if params[:team_id].present?
     scope = scope.where(priority: params[:priority]) if params[:priority].present?

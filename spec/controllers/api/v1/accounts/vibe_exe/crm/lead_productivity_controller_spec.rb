@@ -46,6 +46,8 @@ RSpec.describe 'VibeExe CRM Lead Productivity API', type: :request do
 
     expect(response).to have_http_status(:success)
     expect(response.parsed_body['leads'].pluck('id')).to contain_exactly(lead.id)
+    expect(response.parsed_body.dig('summary', 'total_count')).to eq(1)
+    expect(response.parsed_body.dig('summary', 'stage_counts', stage.id.to_s)).to eq(1)
   end
 
   it 'rejects a label from another account without leaking it' do

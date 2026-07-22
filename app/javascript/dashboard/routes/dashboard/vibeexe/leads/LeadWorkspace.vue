@@ -50,6 +50,7 @@ const errorMessage = ref('');
 const viewMode = ref('list');
 const currentPage = ref(1);
 const totalCount = ref(0);
+const leadSummary = ref({ total_count: 0, stage_counts: {} });
 const noteBody = ref('');
 const noteFiles = ref([]);
 const isUploadingNoteFile = ref(false);
@@ -106,6 +107,9 @@ const teams = computed(() => store.getters['teams/getTeams'] || []);
 const accountLabels = computed(() => store.getters['labels/getLabels'] || []);
 const selectedPipeline = computed(() =>
   pipelines.value.find(pipeline => pipeline.id === Number(form.value.pipeline_id))
+);
+const filterPipeline = computed(() =>
+  pipelines.value.find(pipeline => pipeline.id === Number(filters.value.pipeline_id))
 );
 const stageOptions = computed(() => [
   { value: '', label: t('VIBEEXE_CRM.WORKSPACE.SELECT_STAGE') },
@@ -255,6 +259,7 @@ const fetchLeads = async () => {
     const { data } = await VibeExeCrmAPI.getLeads(cleanParams({ ...filters.value, page: currentPage.value }));
     leads.value = data.leads || [];
     totalCount.value = data.meta?.total_count || 0;
+    leadSummary.value = data.summary || leadSummary.value;
   } catch (error) {
     showError(error);
   } finally {
@@ -817,6 +822,11 @@ onMounted(async () => {
           <NextButton icon="i-lucide-plus" :label="$t('VIBEEXE_CRM.LEADS.CREATE')" :disabled="!hasPipelines" @click="openForm()" />
         </header>
 
+        <section v-if="filterPipeline" class="flex gap-3 overflow-x-auto pb-1" :aria-label="$t('VIBEEXE_CRM.WORKSPACE.STAGE_SUMMARY')">
+          <button class="min-w-36 rounded-xl border border-n-weak bg-n-surface-1 p-4 text-left transition hover:border-n-strong hover:bg-n-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-blue-9" type="button" @click="filters.stage_id = ''"><span class="block truncate text-xs font-medium text-n-slate-10">{{ $t('VIBEEXE_CRM.WORKSPACE.ALL_LEADS') }}</span><strong class="mt-1 block text-2xl font-semibold text-n-slate-12">{{ leadSummary.total_count }}</strong></button>
+          <button v-for="stage in filterPipeline.stages" :key="stage.id" class="min-w-36 rounded-xl border bg-n-surface-1 p-4 text-left transition hover:border-n-strong hover:bg-n-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-blue-9" :class="String(filters.stage_id) === String(stage.id) ? 'border-n-blue-9 ring-1 ring-n-blue-9' : 'border-n-weak'" type="button" @click="filters.stage_id = stage.id"><span class="block truncate text-xs font-medium text-n-slate-10">{{ stage.name }}</span><strong class="mt-1 block text-2xl font-semibold text-n-slate-12">{{ leadSummary.stage_counts[stage.id] || 0 }}</strong></button>
+        </section>
+
         <section class="rounded-xl border border-n-weak bg-n-surface-1 p-4" :aria-label="$t('VIBEEXE_CRM.WORKSPACE.FILTERS')">
           <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(14rem,1.5fr)_repeat(4,minmax(9rem,1fr))_auto]">
             <Input v-model="filters.q" size="sm" :label="$t('VIBEEXE_CRM.WORKSPACE.SEARCH_LABEL')" :placeholder="$t('VIBEEXE_CRM.WORKSPACE.SEARCH')" />
@@ -870,7 +880,13 @@ onMounted(async () => {
         </div>
 
         <div v-else-if="!isLoading" class="overflow-x-auto rounded-xl border border-n-weak bg-n-surface-1">
-          <BaseTable :headers="headers" :items="leads" :loading="isLoading" :no-data-message="$t('VIBEEXE_CRM.WORKSPACE.EMPTY_LIST')">
+          <BaseTable
+            class="ltr:[&_th:first-child]:pl-4 ltr:[&_td:first-child]:pl-4 rtl:[&_th:first-child]:pr-4 rtl:[&_td:first-child]:pr-4"
+            :headers="headers"
+            :items="leads"
+            :loading="isLoading"
+            :no-data-message="$t('VIBEEXE_CRM.WORKSPACE.EMPTY_LIST')"
+          >
             <template #row="{ items }">
               <BaseTableRow v-for="lead in items" :key="lead.id" :item="lead" class="transition-colors hover:bg-n-surface-2">
                 <BaseTableCell><button class="max-w-56 truncate text-left font-medium text-n-blue-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-blue-9" :title="lead.title" @click="openLead(lead)">{{ lead.title }}</button><p class="mt-0.5 mb-0 max-w-56 truncate text-xs text-n-slate-10">{{ lead.pipeline_name }} · {{ normalizedLabel(lead.source) }}</p><div v-if="lead.tags?.length" class="mt-2 flex max-w-64 flex-wrap gap-1"><Label v-for="tag in lead.tags" :key="tag.id" :label="tag" compact /></div></BaseTableCell>
