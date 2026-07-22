@@ -9,6 +9,7 @@
 #  account_id          :bigint           not null
 #  default_owner_id    :bigint
 #  default_pipeline_id :bigint
+#  default_stage_id    :bigint
 #  default_team_id     :bigint
 #  inbox_id            :bigint           not null
 #
@@ -17,6 +18,7 @@
 #  index_vibeexe_crm_inbox_lead_configs_on_account_id           (account_id)
 #  index_vibeexe_crm_inbox_lead_configs_on_default_owner_id     (default_owner_id)
 #  index_vibeexe_crm_inbox_lead_configs_on_default_pipeline_id  (default_pipeline_id)
+#  index_vibeexe_crm_inbox_lead_configs_on_default_stage_id     (default_stage_id)
 #  index_vibeexe_crm_inbox_lead_configs_on_default_team_id      (default_team_id)
 #  index_vibeexe_crm_inbox_lead_configs_on_inbox_id             (inbox_id) UNIQUE
 #
@@ -25,6 +27,7 @@
 #  fk_rails_...  (account_id => accounts.id)
 #  fk_rails_...  (default_owner_id => users.id)
 #  fk_rails_...  (default_pipeline_id => vibeexe_crm_pipelines.id)
+#  fk_rails_...  (default_stage_id => vibeexe_crm_pipeline_stages.id)
 #  fk_rails_...  (default_team_id => teams.id)
 #  fk_rails_...  (inbox_id => inboxes.id)
 #

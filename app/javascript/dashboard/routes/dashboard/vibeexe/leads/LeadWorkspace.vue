@@ -19,6 +19,7 @@ import VibeExeDetailField from 'dashboard/components-next/vibeexe/VibeExeDetailF
 import ContactSelector from 'dashboard/components-next/NewConversation/components/ContactSelector.vue';
 import ContactAPI from 'dashboard/api/contacts';
 import VibeExeCrmAPI from 'dashboard/api/vibeexeCrm';
+import { uploadFile } from 'dashboard/helper/uploadHelper';
 
 const router = useRouter();
 const route = useRoute();
@@ -31,6 +32,8 @@ const selectedLead = ref(null);
 const conversations = ref([]);
 const candidateConversations = ref([]);
 const activities = ref([]);
+const notes = ref([]);
+const tasks = ref([]);
 const boardColumns = ref([]);
 const contacts = ref([]);
 const selectedContact = ref(null);
@@ -42,6 +45,8 @@ const viewMode = ref('list');
 const currentPage = ref(1);
 const totalCount = ref(0);
 const noteBody = ref('');
+const noteFiles = ref([]);
+const isUploadingNoteFile = ref(false);
 const lostReason = ref('');
 const formVisible = ref(false);
 const editingLead = ref(null);
@@ -252,7 +257,12 @@ const fetchBoard = async () => {
 const fetchLead = async leadId => {
   const { data } = await VibeExeCrmAPI.getLead(leadId);
   selectedLead.value = data.lead;
-  await Promise.all([fetchLeadConversations(leadId), fetchActivities(leadId)]);
+  await Promise.all([
+    fetchLeadConversations(leadId),
+    fetchActivities(leadId),
+    fetchNotes(leadId),
+    fetchTasks(leadId),
+  ]);
 };
 
 const fetchLeadConversations = async leadId => {
@@ -265,6 +275,26 @@ const fetchActivities = async leadId => {
   const { data } = await VibeExeCrmAPI.getLeadActivities(leadId);
   activities.value = data.activities || [];
 };
+
+const fetchNotes = async leadId => {
+  const { data } = await VibeExeCrmAPI.getLeadNotes(leadId);
+  notes.value = data.notes || [];
+};
+
+const fetchTasks = async leadId => {
+  const { data } = await VibeExeCrmAPI.getLeadTasks(leadId);
+  tasks.value = data.tasks || [];
+};
+
+const pendingTasks = computed(() =>
+  tasks.value.filter(task => task.status === 'pending')
+);
+const completedTasks = computed(() =>
+  tasks.value.filter(task => task.status === 'completed')
+);
+const overdueTasks = computed(() =>
+  pendingTasks.value.filter(task => task.overdue)
+);
 
 const openLead = lead => {
   router.push({ name: 'lead_show', params: { leadId: lead.id } });
@@ -405,9 +435,52 @@ const unlinkConversation = async conversation => {
 
 const addNote = async () => {
   if (!noteBody.value.trim()) return;
-  await VibeExeCrmAPI.addLeadNote(selectedLead.value.id, noteBody.value);
+  await VibeExeCrmAPI.addLeadNote(
+    selectedLead.value.id,
+    noteBody.value,
+    noteFiles.value.map(file => file.blobId)
+  );
   noteBody.value = '';
-  await fetchActivities(selectedLead.value.id);
+  noteFiles.value = [];
+  await Promise.all([
+    fetchNotes(selectedLead.value.id),
+    fetchActivities(selectedLead.value.id),
+  ]);
+};
+
+const addNoteFiles = async event => {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+
+  isUploadingNoteFile.value = true;
+  try {
+    for (const file of files) {
+      const { fileUrl, blobId } = await uploadFile(file, store.getters.getCurrentAccountId);
+      noteFiles.value.push({ name: file.name, fileUrl, blobId });
+    }
+  } catch (error) {
+    showError(error);
+  } finally {
+    isUploadingNoteFile.value = false;
+    event.target.value = '';
+  }
+};
+
+const removePendingNoteFile = file => {
+  noteFiles.value = noteFiles.value.filter(item => item.blobId !== file.blobId);
+};
+
+const removeNoteAttachment = async (note, attachment) => {
+  await VibeExeCrmAPI.deleteLeadNoteAttachment(selectedLead.value.id, note.id, attachment.id);
+  await fetchNotes(selectedLead.value.id);
+};
+
+const completeTask = async task => {
+  await VibeExeCrmAPI.completeTask(task.id);
+  await Promise.all([
+    fetchTasks(selectedLead.value.id),
+    fetchActivities(selectedLead.value.id),
+  ]);
 };
 
 watch(() => filters.value.pipeline_id, () => {
@@ -507,6 +580,64 @@ onMounted(async () => {
             </section>
 
             <section class="rounded-xl border border-n-weak bg-n-surface-1 p-5">
+              <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 class="mb-0 text-base font-semibold text-n-slate-12">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.TASKS') }}</h3>
+                  <p class="mt-1 mb-0 text-xs text-n-slate-10">
+                    {{ $t('VIBEEXE_CRM.PRODUCTIVITY.TASK_SUMMARY', { open: pendingTasks.length, overdue: overdueTasks.length }) }}
+                  </p>
+                </div>
+                <NextButton size="sm" icon="i-lucide-plus" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.CREATE_TASK')" @click="router.push({ name: 'tasks_index', query: { lead_id: selectedLead.id } })" />
+              </div>
+              <p v-if="!tasks.length" class="rounded-lg bg-n-surface-2 p-5 text-center text-sm text-n-slate-10">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.NO_TASKS') }}</p>
+              <div v-for="task in pendingTasks" :key="task.id" class="flex flex-col gap-3 border-t border-n-weak py-4 first:border-t-0 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="mb-0 truncate font-medium text-n-slate-12">{{ task.title }}</p>
+                    <VibeExeCrmBadge :value="task.priority" />
+                    <span v-if="task.overdue" class="rounded-full bg-n-ruby-3 px-2 py-0.5 text-xs font-medium text-n-ruby-11">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.OVERDUE') }}</span>
+                  </div>
+                  <p class="mt-1 mb-0 text-xs text-n-slate-10">{{ task.assignee?.name || $t('VIBEEXE_CRM.WORKSPACE.UNASSIGNED') }} · {{ formatDateTime(task.due_at) }}</p>
+                </div>
+                <NextButton ghost teal size="sm" icon="i-lucide-check" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.COMPLETE')" :disabled="!task.can_edit" @click="completeTask(task)" />
+              </div>
+              <p v-if="completedTasks.length" class="mt-3 mb-0 text-xs text-n-slate-10">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.COMPLETED_COUNT', { count: completedTasks.length }) }}</p>
+            </section>
+
+            <section class="rounded-xl border border-n-weak bg-n-surface-1 p-5">
+              <h3 class="mb-4 text-base font-semibold text-n-slate-12">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.NOTES') }}</h3>
+              <div class="mb-5 flex flex-col gap-2 sm:flex-row">
+                <Input v-model="noteBody" class="flex-1" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.NOTE_LABEL')" :placeholder="$t('VIBEEXE_CRM.PRODUCTIVITY.NOTE_PLACEHOLDER')" @keydown.enter="addNote" />
+                <div class="flex items-end gap-2">
+                  <label for="lead-note-files" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-n-weak px-3 text-sm font-medium text-n-slate-12 hover:bg-n-surface-2 focus-within:outline focus-within:outline-2 focus-within:outline-n-blue-9">
+                    <i :class="isUploadingNoteFile ? 'i-lucide-loader-circle animate-spin' : 'i-lucide-paperclip'" class="size-4" />
+                    {{ $t('VIBEEXE_CRM.PRODUCTIVITY.ATTACH') }}
+                    <input id="lead-note-files" class="sr-only" type="file" multiple :disabled="isUploadingNoteFile" @change="addNoteFiles" />
+                  </label>
+                  <NextButton icon="i-lucide-plus" :label="$t('VIBEEXE_CRM.WORKSPACE.ADD_NOTE')" :disabled="isUploadingNoteFile || !noteBody.trim()" @click="addNote" />
+                </div>
+              </div>
+              <ul v-if="noteFiles.length" class="mb-4 flex flex-wrap gap-2">
+                <li v-for="file in noteFiles" :key="file.blobId" class="inline-flex max-w-full items-center gap-2 rounded-lg bg-n-surface-2 px-3 py-2 text-xs text-n-slate-11">
+                  <a :href="file.fileUrl" target="_blank" rel="noopener noreferrer" class="max-w-64 truncate text-n-blue-11 hover:underline">{{ file.name }}</a>
+                  <button type="button" class="text-n-ruby-11" :aria-label="$t('VIBEEXE_CRM.PRODUCTIVITY.REMOVE_ATTACHMENT')" @click="removePendingNoteFile(file)"><i class="i-lucide-x size-3" /></button>
+                </li>
+              </ul>
+              <p v-if="!notes.length" class="rounded-lg bg-n-surface-2 p-5 text-center text-sm text-n-slate-10">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.NO_NOTES') }}</p>
+              <article v-for="note in notes" :key="note.id" class="border-t border-n-weak py-4 first:border-t-0">
+                <p class="mb-2 whitespace-pre-wrap break-words text-sm text-n-slate-12">{{ note.body }}</p>
+                <div v-if="note.attachments?.length" class="mb-2 flex flex-wrap gap-2">
+                  <span v-for="attachment in note.attachments" :key="attachment.id" class="inline-flex max-w-full items-center gap-2 rounded-lg bg-n-surface-2 px-3 py-2 text-xs">
+                    <i :class="attachment.content_type?.startsWith('image/') ? 'i-lucide-image' : 'i-lucide-paperclip'" class="size-3 text-n-slate-10" />
+                    <a :href="attachment.file_url" target="_blank" rel="noopener noreferrer" class="max-w-64 truncate text-n-blue-11 hover:underline">{{ attachment.filename }}</a>
+                    <button v-if="note.can_edit" type="button" class="text-n-ruby-11" :aria-label="$t('VIBEEXE_CRM.PRODUCTIVITY.REMOVE_ATTACHMENT')" @click="removeNoteAttachment(note, attachment)"><i class="i-lucide-trash-2 size-3" /></button>
+                  </span>
+                </div>
+                <p class="mb-0 text-xs text-n-slate-10">{{ note.author?.name }} · {{ formatDateTime(note.created_at) }}<span v-if="note.edited_at"> · {{ $t('VIBEEXE_CRM.PRODUCTIVITY.EDITED') }}</span></p>
+              </article>
+            </section>
+
+            <section class="rounded-xl border border-n-weak bg-n-surface-1 p-5">
               <div class="mb-4 flex items-center justify-between gap-3"><h3 class="mb-0 text-base font-semibold text-n-slate-12">{{ $t('VIBEEXE_CRM.WORKSPACE.LINKED_CONVERSATIONS') }}</h3><span class="text-xs text-n-slate-10">{{ conversations.length }}</span></div>
               <p v-if="!conversations.length" class="rounded-lg bg-n-surface-2 p-5 text-center text-sm text-n-slate-10">{{ $t('VIBEEXE_CRM.WORKSPACE.NO_CONVERSATIONS') }}</p>
               <div v-for="conversation in conversations" :key="conversation.id" class="flex flex-col gap-3 border-t border-n-weak py-4 first:border-t-0 sm:flex-row sm:items-center sm:justify-between">
@@ -532,10 +663,6 @@ onMounted(async () => {
 
             <section class="rounded-xl border border-n-weak bg-n-surface-1 p-5">
               <h3 class="mb-4 text-base font-semibold text-n-slate-12">{{ $t('VIBEEXE_CRM.WORKSPACE.ACTIVITY') }}</h3>
-              <div class="mb-5 flex flex-col gap-2 sm:flex-row">
-                <Input v-model="noteBody" class="flex-1" :label="$t('VIBEEXE_CRM.WORKSPACE.NOTE_LABEL')" :placeholder="$t('VIBEEXE_CRM.WORKSPACE.NOTE_PLACEHOLDER')" @keydown.enter="addNote" />
-                <NextButton icon="i-lucide-plus" :label="$t('VIBEEXE_CRM.WORKSPACE.ADD_NOTE')" @click="addNote" />
-              </div>
               <div class="relative ml-4 border-s border-n-weak pl-6">
                 <div v-for="activity in activities" :key="activity.id" class="relative pb-6 text-sm last:pb-0">
                   <span class="absolute -start-[2.15rem] top-0 grid size-5 place-items-center rounded-full border border-n-weak bg-n-surface-1 text-n-slate-10"><i :class="activity.activity_type === 'note_added' ? 'i-lucide-sticky-note' : 'i-lucide-activity'" class="size-3" /></span>

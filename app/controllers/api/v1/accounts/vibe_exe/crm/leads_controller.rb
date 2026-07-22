@@ -126,6 +126,7 @@ class Api::V1::Accounts::VibeExe::Crm::LeadsController < Api::V1::Accounts::Vibe
     scope = scope.where(priority: params[:priority]) if params[:priority].present?
     scope = scope.where(status: params[:status]) if params[:status].present?
     scope = scope.where(source: params[:source]) if params[:source].present?
+    scope = scope.tagged_with(Current.account.labels.find(params[:label_id]).title, any: true) if params[:label_id].present?
     scope = scope.where('vibeexe_crm_leads.created_at >= ?', Time.zone.parse(params[:created_from]).beginning_of_day) if params[:created_from].present?
     scope = scope.where('vibeexe_crm_leads.created_at <= ?', Time.zone.parse(params[:created_to]).end_of_day) if params[:created_to].present?
     scope = scope.where('vibeexe_crm_leads.expected_close_date >= ?', Date.parse(params[:close_from])) if params[:close_from].present?

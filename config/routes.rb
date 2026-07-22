@@ -283,6 +283,26 @@ Rails.application.routes.draw do
                 end
                 resources :conversations, only: [:index, :create, :destroy], controller: 'lead_conversations'
                 resources :activities, only: [:index, :create], controller: 'lead_activities'
+                resources :notes, only: [:index, :create, :update, :destroy], controller: 'lead_notes' do
+                  member do
+                    delete 'attachments/:attachment_id', action: :destroy_attachment
+                  end
+                end
+                resources :tasks, only: [:index, :create], controller: 'lead_tasks'
+                resources :tags, only: [:index], controller: 'lead_tags' do
+                  collection do
+                    post ':label_id', action: :create
+                    delete ':label_id', action: :destroy
+                  end
+                end
+              end
+              resources :tasks, only: [:index, :show, :create, :update] do
+                member do
+                  patch :complete
+                  patch :cancel
+                  patch :reschedule
+                  delete 'attachments/:attachment_id', action: :destroy_attachment
+                end
               end
               resources :pipelines, only: [:index, :create, :update, :destroy] do
                 collection do

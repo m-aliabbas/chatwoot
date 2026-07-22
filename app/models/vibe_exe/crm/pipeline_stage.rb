@@ -7,6 +7,8 @@
 #  default     :boolean          default(FALSE), not null
 #  name        :string           not null
 #  position    :integer          default(0), not null
+#  probability :integer          default(0), not null
+#  stage_type  :integer          default("open_stage"), not null
 #  created_at  :datetime         not null
 #  updated_at  :datetime         not null
 #  account_id  :bigint           not null

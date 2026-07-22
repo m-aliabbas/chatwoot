@@ -1,11 +1,7 @@
 import { frontendURL } from 'dashboard/helper/URLHelper';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
-import {
-  ROLES,
-  CONVERSATION_PERMISSIONS,
-} from 'dashboard/constants/permissions.js';
-import VibeExeEmptyModulePage from './VibeExeEmptyModulePage.vue';
 import LeadWorkspace from './leads/LeadWorkspace.vue';
+import TaskWorkspace from './tasks/TaskWorkspace.vue';
 
 export const routes = [
   {
@@ -32,9 +28,10 @@ export const routes = [
     path: frontendURL('accounts/:accountId/tasks'),
     name: 'tasks_index',
     meta: {
-      permissions: [...ROLES, ...CONVERSATION_PERMISSIONS],
+      featureFlag: FEATURE_FLAGS.CRM,
+      permissions: ['administrator', 'agent', 'contact_manage'],
       vibeexeModule: 'TASKS',
     },
-    component: VibeExeEmptyModulePage,
+    component: TaskWorkspace,
   },
 ];

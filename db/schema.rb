@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_22_000000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1472,14 +1472,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
     t.bigint "default_pipeline_id"
     t.bigint "default_owner_id"
     t.bigint "default_team_id"
-    t.bigint "default_stage_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "default_stage_id"
     t.index ["account_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_account_id"
     t.index ["default_owner_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_owner_id"
     t.index ["default_pipeline_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_pipeline_id"
-    t.index ["default_team_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_team_id"
     t.index ["default_stage_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_stage_id"
+    t.index ["default_team_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_team_id"
     t.index ["inbox_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_inbox_id", unique: true
   end
 
@@ -1490,10 +1490,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
     t.bigint "user_id"
     t.string "activity_type", null: false
     t.jsonb "metadata", default: {}, null: false
-    t.decimal "estimated_value", precision: 15, scale: 2
-    t.string "currency", default: "USD", null: false
-    t.date "expected_close_date"
-    t.datetime "last_activity_at"
     t.datetime "occurred_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -1521,6 +1517,20 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
     t.index ["linked_by_id"], name: "index_vibeexe_crm_lead_conversations_on_linked_by_id"
   end
 
+  create_table "vibeexe_crm_lead_notes", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "lead_id", null: false
+    t.bigint "author_id", null: false
+    t.text "body", null: false
+    t.datetime "edited_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "lead_id", "created_at"], name: "index_vibeexe_lead_notes_on_lead_timeline"
+    t.index ["account_id"], name: "index_vibeexe_crm_lead_notes_on_account_id"
+    t.index ["author_id"], name: "index_vibeexe_crm_lead_notes_on_author_id"
+    t.index ["lead_id"], name: "index_vibeexe_crm_lead_notes_on_lead_id"
+  end
+
   create_table "vibeexe_crm_leads", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "contact_id", null: false
@@ -1540,10 +1550,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
     t.jsonb "metadata", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "estimated_value", precision: 15, scale: 2
+    t.string "currency", default: "USD", null: false
+    t.date "expected_close_date"
+    t.datetime "last_activity_at"
     t.index ["account_id", "contact_id", "status", "archived_at"], name: "index_vibeexe_leads_on_open_contact_lookup"
-    t.index ["account_id", "pipeline_id", "pipeline_stage_id"], name: "index_vibeexe_leads_on_pipeline_lookup"
     t.index ["account_id", "expected_close_date"], name: "index_vibeexe_leads_on_expected_close_lookup"
     t.index ["account_id", "last_activity_at"], name: "index_vibeexe_leads_on_last_activity_lookup"
+    t.index ["account_id", "pipeline_id", "pipeline_stage_id"], name: "index_vibeexe_leads_on_pipeline_lookup"
     t.index ["account_id", "status", "archived_at"], name: "index_vibeexe_leads_on_status_lookup"
     t.index ["account_id"], name: "index_vibeexe_crm_leads_on_account_id"
     t.index ["contact_id"], name: "index_vibeexe_crm_leads_on_contact_id"
@@ -1561,10 +1575,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
     t.boolean "default", default: false, null: false
     t.boolean "active", default: true, null: false
     t.integer "position", default: 0, null: false
-    t.integer "stage_type", default: 0, null: false
-    t.integer "probability", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "stage_type", default: 0, null: false
+    t.integer "probability", default: 0, null: false
     t.index ["account_id"], name: "index_vibeexe_crm_pipeline_stages_on_account_id"
     t.index ["pipeline_id", "default"], name: "index_vibeexe_crm_pipeline_stages_on_pipeline_id_and_default"
     t.index ["pipeline_id", "name"], name: "index_vibeexe_crm_pipeline_stages_on_pipeline_id_and_name", unique: true
@@ -1582,6 +1596,37 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
     t.index ["account_id", "default"], name: "index_vibeexe_crm_pipelines_on_account_id_and_default"
     t.index ["account_id", "name"], name: "index_vibeexe_crm_pipelines_on_account_id_and_name", unique: true
     t.index ["account_id"], name: "index_vibeexe_crm_pipelines_on_account_id"
+  end
+
+  create_table "vibeexe_crm_tasks", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "lead_id", null: false
+    t.bigint "assignee_id"
+    t.bigint "creator_id", null: false
+    t.bigint "completer_id"
+    t.bigint "conversation_id"
+    t.integer "task_type", default: 5, null: false
+    t.string "title", null: false
+    t.text "description"
+    t.integer "status", default: 0, null: false
+    t.integer "priority", default: 1, null: false
+    t.datetime "due_at", null: false
+    t.datetime "reminder_at"
+    t.datetime "reminder_sent_at"
+    t.datetime "completed_at"
+    t.datetime "cancelled_at"
+    t.text "completion_note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "assignee_id", "status", "due_at"], name: "index_vibeexe_tasks_on_assignee_worklist"
+    t.index ["account_id", "status", "due_at"], name: "index_vibeexe_tasks_on_account_status_due"
+    t.index ["account_id", "status", "reminder_at"], name: "index_vibeexe_tasks_on_due_reminders"
+    t.index ["account_id"], name: "index_vibeexe_crm_tasks_on_account_id"
+    t.index ["assignee_id"], name: "index_vibeexe_crm_tasks_on_assignee_id"
+    t.index ["completer_id"], name: "index_vibeexe_crm_tasks_on_completer_id"
+    t.index ["conversation_id"], name: "index_vibeexe_crm_tasks_on_conversation_id"
+    t.index ["creator_id"], name: "index_vibeexe_crm_tasks_on_creator_id"
+    t.index ["lead_id"], name: "index_vibeexe_crm_tasks_on_lead_id"
   end
 
   create_table "webhooks", force: :cascade do |t|
@@ -1621,6 +1666,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
   add_foreign_key "vibeexe_crm_inbox_lead_configs", "inboxes"
   add_foreign_key "vibeexe_crm_inbox_lead_configs", "teams", column: "default_team_id"
   add_foreign_key "vibeexe_crm_inbox_lead_configs", "users", column: "default_owner_id"
+  add_foreign_key "vibeexe_crm_inbox_lead_configs", "vibeexe_crm_pipeline_stages", column: "default_stage_id"
   add_foreign_key "vibeexe_crm_inbox_lead_configs", "vibeexe_crm_pipelines", column: "default_pipeline_id"
   add_foreign_key "vibeexe_crm_lead_activities", "accounts"
   add_foreign_key "vibeexe_crm_lead_activities", "conversations"
@@ -1630,7 +1676,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
   add_foreign_key "vibeexe_crm_lead_conversations", "conversations"
   add_foreign_key "vibeexe_crm_lead_conversations", "users", column: "linked_by_id"
   add_foreign_key "vibeexe_crm_lead_conversations", "vibeexe_crm_leads", column: "lead_id"
-  add_foreign_key "vibeexe_crm_inbox_lead_configs", "vibeexe_crm_pipeline_stages", column: "default_stage_id"
+  add_foreign_key "vibeexe_crm_lead_notes", "accounts"
+  add_foreign_key "vibeexe_crm_lead_notes", "users", column: "author_id"
+  add_foreign_key "vibeexe_crm_lead_notes", "vibeexe_crm_leads", column: "lead_id"
   add_foreign_key "vibeexe_crm_leads", "accounts"
   add_foreign_key "vibeexe_crm_leads", "contacts"
   add_foreign_key "vibeexe_crm_leads", "teams"
@@ -1641,6 +1689,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
   add_foreign_key "vibeexe_crm_pipeline_stages", "accounts"
   add_foreign_key "vibeexe_crm_pipeline_stages", "vibeexe_crm_pipelines", column: "pipeline_id"
   add_foreign_key "vibeexe_crm_pipelines", "accounts"
+  add_foreign_key "vibeexe_crm_tasks", "accounts"
+  add_foreign_key "vibeexe_crm_tasks", "conversations"
+  add_foreign_key "vibeexe_crm_tasks", "users", column: "assignee_id"
+  add_foreign_key "vibeexe_crm_tasks", "users", column: "completer_id"
+  add_foreign_key "vibeexe_crm_tasks", "users", column: "creator_id"
+  add_foreign_key "vibeexe_crm_tasks", "vibeexe_crm_leads", column: "lead_id"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).

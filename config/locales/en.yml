@@ -30,6 +30,19 @@
 # available at https://guides.rubyonrails.org/i18n.html.
 
 en:
+  activerecord:
+    errors:
+      models:
+        vibe_exe/crm/task:
+          attributes:
+            reminder_at:
+              after_due_at: must be at or before the task due time
+            files:
+              too_large: '%{filename} exceeds the %{maximum_size} MB upload limit'
+        vibe_exe/crm/lead_note:
+          attributes:
+            files:
+              too_large: '%{filename} exceeds the %{maximum_size} MB upload limit'
   hello: 'Hello world'
   inbox:
     reauthorization:

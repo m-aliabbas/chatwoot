@@ -110,8 +110,85 @@ class VibeExeCrmAPI extends ApiClient {
     return axios.get(`${this.url}/leads/${leadId}/activities`, { params });
   }
 
-  addLeadNote(leadId, body) {
-    return axios.post(`${this.url}/leads/${leadId}/activities`, { body });
+  addLeadNote(leadId, body, blobIds = []) {
+    return axios.post(`${this.url}/leads/${leadId}/notes`, {
+      body,
+      blob_ids: blobIds,
+    });
+  }
+
+  getLeadNotes(leadId, params = {}) {
+    return axios.get(`${this.url}/leads/${leadId}/notes`, { params });
+  }
+
+  updateLeadNote(leadId, noteId, body) {
+    return axios.patch(`${this.url}/leads/${leadId}/notes/${noteId}`, { body });
+  }
+
+  deleteLeadNote(leadId, noteId) {
+    return axios.delete(`${this.url}/leads/${leadId}/notes/${noteId}`);
+  }
+
+  deleteLeadNoteAttachment(leadId, noteId, attachmentId) {
+    return axios.delete(
+      `${this.url}/leads/${leadId}/notes/${noteId}/attachments/${attachmentId}`
+    );
+  }
+
+  getLeadTags(leadId) {
+    return axios.get(`${this.url}/leads/${leadId}/tags`);
+  }
+
+  addLeadTag(leadId, labelId) {
+    return axios.post(`${this.url}/leads/${leadId}/tags/${labelId}`);
+  }
+
+  removeLeadTag(leadId, labelId) {
+    return axios.delete(`${this.url}/leads/${leadId}/tags/${labelId}`);
+  }
+
+  getTasks(params = {}) {
+    return axios.get(`${this.url}/tasks`, { params });
+  }
+
+  getTask(taskId) {
+    return axios.get(`${this.url}/tasks/${taskId}`);
+  }
+
+  createTask(data) {
+    return axios.post(`${this.url}/tasks`, data);
+  }
+
+  updateTask(taskId, data) {
+    return axios.patch(`${this.url}/tasks/${taskId}`, data);
+  }
+
+  completeTask(taskId, completionNote) {
+    return axios.patch(`${this.url}/tasks/${taskId}/complete`, {
+      completion_note: completionNote,
+    });
+  }
+
+  cancelTask(taskId) {
+    return axios.patch(`${this.url}/tasks/${taskId}/cancel`);
+  }
+
+  rescheduleTask(taskId, data) {
+    return axios.patch(`${this.url}/tasks/${taskId}/reschedule`, data);
+  }
+
+  deleteTaskAttachment(taskId, attachmentId) {
+    return axios.delete(
+      `${this.url}/tasks/${taskId}/attachments/${attachmentId}`
+    );
+  }
+
+  getLeadTasks(leadId, params = {}) {
+    return axios.get(`${this.url}/leads/${leadId}/tasks`, { params });
+  }
+
+  createLeadTask(leadId, data) {
+    return axios.post(`${this.url}/leads/${leadId}/tasks`, data);
   }
 
   getInboxLeadConfig(inboxId) {
