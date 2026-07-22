@@ -45,6 +45,15 @@ export default {
         unreadCount: this.meta.unreadCount,
       });
 
+      if (notificationType === 'task_reminder') {
+        this.$router.push({
+          name: 'lead_show',
+          params: { leadId: notification.meta.lead_id },
+          query: { task_id: notification.meta.task_id },
+        });
+        return;
+      }
+
       this.$router.push(
         `/app/accounts/${this.accountId}/conversations/${conversationId}`
       );

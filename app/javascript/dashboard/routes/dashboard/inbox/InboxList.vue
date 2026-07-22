@@ -174,6 +174,21 @@ const openConversation = async notificationItem => {
     notificationType,
   } = notificationItem;
 
+  if (notificationType === 'task_reminder') {
+    await store.dispatch('notifications/read', {
+      id,
+      primaryActorId,
+      primaryActorType,
+      unreadCount: meta.value.unreadCount,
+    });
+    router.push({
+      name: 'lead_show',
+      params: { leadId: notificationItem.meta.leadId },
+      query: { task_id: notificationItem.meta.taskId },
+    });
+    return;
+  }
+
   if (route.params.id === String(conversationId)) return;
 
   useTrack(INBOX_EVENTS.OPEN_CONVERSATION_VIA_INBOX, {

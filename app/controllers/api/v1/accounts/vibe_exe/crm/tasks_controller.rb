@@ -89,8 +89,8 @@ class Api::V1::Accounts::VibeExe::Crm::TasksController < Api::V1::Accounts::Vibe
     scope = scope.where(status: params[:status]) if params[:status].present?
     scope = scope.where(task_type: params[:task_type]) if params[:task_type].present?
     scope = scope.where(priority: params[:priority]) if params[:priority].present?
-    scope = scope.where('due_at >= ?', Time.zone.parse(params[:due_from])) if params[:due_from].present?
-    scope = scope.where('due_at <= ?', Time.zone.parse(params[:due_to])) if params[:due_to].present?
+    scope = scope.where('due_at >= ?', Time.zone.parse(params[:due_from]).beginning_of_day) if params[:due_from].present?
+    scope = scope.where('due_at <= ?', Time.zone.parse(params[:due_to]).end_of_day) if params[:due_to].present?
     scope = scope.overdue if params[:overdue].to_s == 'true'
     scope = scope.due_today if params[:due_today].to_s == 'true'
     scope = apply_search(scope)

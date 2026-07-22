@@ -58,6 +58,7 @@ class VibeExe::Crm::Task < ApplicationRecord
   belongs_to :completer, class_name: 'User', optional: true
   belongs_to :conversation, optional: true
   has_many_attached :files
+  has_many :notifications, as: :primary_actor, dependent: :destroy
 
   enum task_type: { follow_up: 0, call: 1, meeting: 2, whatsapp: 3, email: 4, general: 5, other: 6 }
   enum status: { pending: 0, completed: 1, cancelled: 2 }
@@ -89,6 +90,18 @@ class VibeExe::Crm::Task < ApplicationRecord
       assignee_id: assignee_id,
       due_at: due_at,
       reminder_at: reminder_at
+    }
+  end
+
+  def push_event_data
+    actor = assignee&.push_event_data
+    {
+      id: id,
+      title: title,
+      lead_id: lead_id,
+      due_at: due_at,
+      inbox_id: nil,
+      meta: { assignee: actor, sender: actor }
     }
   end
 

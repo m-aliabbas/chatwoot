@@ -14,12 +14,15 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Popover from 'dashboard/components-next/popover/Popover.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import SelectInput from 'dashboard/components-next/select/Select.vue';
+import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import VibeExeCrmBadge from 'dashboard/components-next/vibeexe/VibeExeCrmBadge.vue';
 import VibeExeDetailField from 'dashboard/components-next/vibeexe/VibeExeDetailField.vue';
+import Label from 'dashboard/components-next/label/Label.vue';
 import ContactSelector from 'dashboard/components-next/NewConversation/components/ContactSelector.vue';
 import ContactAPI from 'dashboard/api/contacts';
 import VibeExeCrmAPI from 'dashboard/api/vibeexeCrm';
 import { uploadFile } from 'dashboard/helper/uploadHelper';
+import LeadTagPicker from './LeadTagPicker.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -53,6 +56,14 @@ const editingLead = ref(null);
 const formDialog = ref(null);
 const lostDialog = ref(null);
 const archiveDialog = ref(null);
+const noteDialog = ref(null);
+const deleteNoteDialog = ref(null);
+const completeTaskDialog = ref(null);
+const editingNote = ref(null);
+const deletingNote = ref(null);
+const editedNoteBody = ref('');
+const taskToComplete = ref(null);
+const taskCompletionNote = ref('');
 
 const filters = ref({
   q: '',
@@ -63,6 +74,7 @@ const filters = ref({
   priority: '',
   status: '',
   source: '',
+  label_id: '',
   created_from: '',
   created_to: '',
   close_from: '',
@@ -88,6 +100,7 @@ const form = ref({
 
 const agents = computed(() => store.getters['agents/getAgents'] || []);
 const teams = computed(() => store.getters['teams/getTeams'] || []);
+const accountLabels = computed(() => store.getters['labels/getLabels'] || []);
 const selectedPipeline = computed(() =>
   pipelines.value.find(pipeline => pipeline.id === Number(form.value.pipeline_id))
 );
@@ -147,6 +160,10 @@ const sourceOptions = computed(() => [
   { value: 'email', label: t('VIBEEXE_CRM.WORKSPACE.SOURCE_EMAIL') },
   { value: 'web_widget', label: t('VIBEEXE_CRM.WORKSPACE.SOURCE_WEB_WIDGET') },
 ]);
+const labelOptions = computed(() => [
+  { value: '', label: t('VIBEEXE_CRM.WORKSPACE.ANY_TAG') },
+  ...accountLabels.value.map(label => ({ value: label.id, label: label.title })),
+]);
 const headers = computed(() => [
   t('VIBEEXE_CRM.WORKSPACE.COL_LEAD'),
   t('VIBEEXE_CRM.WORKSPACE.COL_CONTACT'),
@@ -173,6 +190,7 @@ const activeFilterChips = computed(() => {
     priority: priorityOptions.value,
     status: statusOptions.value,
     source: sourceOptions.value,
+    label_id: labelOptions.value,
   };
   return Object.entries(optionSets)
     .filter(([key]) => filters.value[key])
@@ -295,6 +313,9 @@ const completedTasks = computed(() =>
 const overdueTasks = computed(() =>
   pendingTasks.value.filter(task => task.overdue)
 );
+const upcomingTasks = computed(() =>
+  pendingTasks.value.filter(task => !task.overdue)
+);
 
 const openLead = lead => {
   router.push({ name: 'lead_show', params: { leadId: lead.id } });
@@ -337,7 +358,7 @@ const clearFilters = () => {
   const pipelineId = filters.value.pipeline_id;
   filters.value = {
     q: '', pipeline_id: pipelineId, stage_id: '', owner_id: '', team_id: '', priority: '',
-    status: '', source: '', created_from: '', created_to: '', close_from: '', close_to: '',
+    status: '', source: '', label_id: '', created_from: '', created_to: '', close_from: '', close_to: '',
     sort_by: 'last_activity_at', sort_direction: 'desc',
   };
   currentPage.value = 1;
@@ -475,8 +496,46 @@ const removeNoteAttachment = async (note, attachment) => {
   await fetchNotes(selectedLead.value.id);
 };
 
-const completeTask = async task => {
-  await VibeExeCrmAPI.completeTask(task.id);
+const openNoteEditor = note => {
+  editingNote.value = note;
+  editedNoteBody.value = note.body;
+  noteDialog.value?.open();
+};
+
+const updateNote = async () => {
+  if (!editedNoteBody.value.trim()) return;
+  await VibeExeCrmAPI.updateLeadNote(
+    selectedLead.value.id,
+    editingNote.value.id,
+    editedNoteBody.value
+  );
+  noteDialog.value?.close();
+  editingNote.value = null;
+  await Promise.all([fetchNotes(selectedLead.value.id), fetchActivities(selectedLead.value.id)]);
+};
+
+const confirmDeleteNote = note => {
+  deletingNote.value = note;
+  deleteNoteDialog.value?.open();
+};
+
+const deleteNote = async () => {
+  await VibeExeCrmAPI.deleteLeadNote(selectedLead.value.id, deletingNote.value.id);
+  deleteNoteDialog.value?.close();
+  deletingNote.value = null;
+  await Promise.all([fetchNotes(selectedLead.value.id), fetchActivities(selectedLead.value.id)]);
+};
+
+const openTaskCompletion = task => {
+  taskToComplete.value = task;
+  taskCompletionNote.value = '';
+  completeTaskDialog.value?.open();
+};
+
+const completeTask = async () => {
+  await VibeExeCrmAPI.completeTask(taskToComplete.value.id, taskCompletionNote.value);
+  completeTaskDialog.value?.close();
+  taskToComplete.value = null;
   await Promise.all([
     fetchTasks(selectedLead.value.id),
     fetchActivities(selectedLead.value.id),
@@ -504,6 +563,7 @@ watch(() => route.params.leadId, leadId => {
 onMounted(async () => {
   store.dispatch('agents/get');
   store.dispatch('teams/get');
+  store.dispatch('labels/get');
   await fetchPipelines();
   await fetchLeads();
   if (route.params.leadId) await fetchLead(route.params.leadId);
@@ -547,6 +607,12 @@ onMounted(async () => {
             </div>
             <p class="mt-1 mb-0 text-sm text-n-slate-11">{{ selectedLead.contact?.name || $t('VIBEEXE_CRM.WORKSPACE.UNKNOWN_CONTACT') }}</p>
             <p class="mt-2 mb-0 text-xs font-medium text-n-slate-10">{{ selectedLead.pipeline_name }} <span aria-hidden="true">·</span> {{ selectedLead.pipeline_stage_name }}</p>
+            <div class="mt-3"><LeadTagPicker :lead-id="selectedLead.id" /></div>
+            <div class="mt-3 flex flex-wrap gap-2 text-xs">
+              <span class="rounded-md bg-n-slate-3 px-2 py-1 text-n-slate-11">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.OPEN_COUNT', { count: selectedLead.productivity_summary?.open_tasks_count || 0 }) }}</span>
+              <span class="rounded-md bg-n-ruby-3 px-2 py-1 text-n-ruby-11">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.OVERDUE_COUNT', { count: selectedLead.productivity_summary?.overdue_tasks_count || 0 }) }}</span>
+              <span v-if="selectedLead.productivity_summary?.next_task_due_at" class="rounded-md bg-n-blue-3 px-2 py-1 text-n-blue-11">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.NEXT_DUE', { time: formatDateTime(selectedLead.productivity_summary.next_task_due_at) }) }}</span>
+            </div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <NextButton size="sm" icon="i-lucide-pencil" :label="$t('VIBEEXE_CRM.WORKSPACE.EDIT')" @click="openForm(selectedLead)" />
@@ -590,16 +656,23 @@ onMounted(async () => {
                 <NextButton size="sm" icon="i-lucide-plus" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.CREATE_TASK')" @click="router.push({ name: 'tasks_index', query: { lead_id: selectedLead.id } })" />
               </div>
               <p v-if="!tasks.length" class="rounded-lg bg-n-surface-2 p-5 text-center text-sm text-n-slate-10">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.NO_TASKS') }}</p>
-              <div v-for="task in pendingTasks" :key="task.id" class="flex flex-col gap-3 border-t border-n-weak py-4 first:border-t-0 sm:flex-row sm:items-center sm:justify-between">
+              <h4 v-if="overdueTasks.length" class="mb-1 text-xs font-semibold uppercase tracking-wide text-n-ruby-11">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.OVERDUE_TASKS') }}</h4>
+              <div v-for="task in overdueTasks" :key="task.id" class="flex flex-col gap-3 border-t border-n-weak py-4 first:border-t-0 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     <p class="mb-0 truncate font-medium text-n-slate-12">{{ task.title }}</p>
                     <VibeExeCrmBadge :value="task.priority" />
                     <span v-if="task.overdue" class="rounded-full bg-n-ruby-3 px-2 py-0.5 text-xs font-medium text-n-ruby-11">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.OVERDUE') }}</span>
+                    <span v-if="task.attachments?.length" class="inline-flex items-center gap-1 text-xs text-n-slate-10"><i class="i-lucide-paperclip size-3" />{{ task.attachments.length }}</span>
                   </div>
                   <p class="mt-1 mb-0 text-xs text-n-slate-10">{{ task.assignee?.name || $t('VIBEEXE_CRM.WORKSPACE.UNASSIGNED') }} · {{ formatDateTime(task.due_at) }}</p>
                 </div>
-                <NextButton ghost teal size="sm" icon="i-lucide-check" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.COMPLETE')" :disabled="!task.can_edit" @click="completeTask(task)" />
+                <NextButton ghost teal size="sm" icon="i-lucide-check" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.COMPLETE')" :disabled="!task.can_edit" @click="openTaskCompletion(task)" />
+              </div>
+              <h4 v-if="upcomingTasks.length" class="mt-4 mb-1 text-xs font-semibold uppercase tracking-wide text-n-slate-10">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.UPCOMING_TASKS') }}</h4>
+              <div v-for="task in upcomingTasks" :key="task.id" class="flex flex-col gap-3 border-t border-n-weak py-4 first:border-t-0 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><p class="mb-0 truncate font-medium text-n-slate-12">{{ task.title }}</p><VibeExeCrmBadge :value="task.priority" /><span v-if="task.attachments?.length" class="inline-flex items-center gap-1 text-xs text-n-slate-10"><i class="i-lucide-paperclip size-3" />{{ task.attachments.length }}</span></div><p class="mt-1 mb-0 text-xs text-n-slate-10">{{ task.assignee?.name || $t('VIBEEXE_CRM.WORKSPACE.UNASSIGNED') }} · {{ formatDateTime(task.due_at) }}</p></div>
+                <NextButton ghost teal size="sm" icon="i-lucide-check" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.COMPLETE')" :disabled="!task.can_edit" @click="openTaskCompletion(task)" />
               </div>
               <p v-if="completedTasks.length" class="mt-3 mb-0 text-xs text-n-slate-10">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.COMPLETED_COUNT', { count: completedTasks.length }) }}</p>
             </section>
@@ -607,7 +680,7 @@ onMounted(async () => {
             <section class="rounded-xl border border-n-weak bg-n-surface-1 p-5">
               <h3 class="mb-4 text-base font-semibold text-n-slate-12">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.NOTES') }}</h3>
               <div class="mb-5 flex flex-col gap-2 sm:flex-row">
-                <Input v-model="noteBody" class="flex-1" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.NOTE_LABEL')" :placeholder="$t('VIBEEXE_CRM.PRODUCTIVITY.NOTE_PLACEHOLDER')" @keydown.enter="addNote" />
+                <TextArea v-model="noteBody" class="flex-1" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.NOTE_LABEL')" :placeholder="$t('VIBEEXE_CRM.PRODUCTIVITY.NOTE_PLACEHOLDER')" :max-length="10000" min-height="5rem" max-height="12rem" auto-height resize show-character-count />
                 <div class="flex items-end gap-2">
                   <label for="lead-note-files" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-n-weak px-3 text-sm font-medium text-n-slate-12 hover:bg-n-surface-2 focus-within:outline focus-within:outline-2 focus-within:outline-n-blue-9">
                     <i :class="isUploadingNoteFile ? 'i-lucide-loader-circle animate-spin' : 'i-lucide-paperclip'" class="size-4" />
@@ -625,7 +698,13 @@ onMounted(async () => {
               </ul>
               <p v-if="!notes.length" class="rounded-lg bg-n-surface-2 p-5 text-center text-sm text-n-slate-10">{{ $t('VIBEEXE_CRM.PRODUCTIVITY.NO_NOTES') }}</p>
               <article v-for="note in notes" :key="note.id" class="border-t border-n-weak py-4 first:border-t-0">
-                <p class="mb-2 whitespace-pre-wrap break-words text-sm text-n-slate-12">{{ note.body }}</p>
+                <div class="mb-2 flex items-start justify-between gap-3">
+                  <p class="mb-0 whitespace-pre-wrap break-words text-sm text-n-slate-12">{{ note.body }}</p>
+                  <div v-if="note.can_edit || note.can_delete" class="flex shrink-0 gap-1">
+                    <NextButton v-if="note.can_edit" ghost slate xs icon="i-lucide-pencil" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.EDIT_NOTE')" @click="openNoteEditor(note)" />
+                    <NextButton v-if="note.can_delete" ghost ruby xs icon="i-lucide-trash-2" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.DELETE_NOTE')" @click="confirmDeleteNote(note)" />
+                  </div>
+                </div>
                 <div v-if="note.attachments?.length" class="mb-2 flex flex-wrap gap-2">
                   <span v-for="attachment in note.attachments" :key="attachment.id" class="inline-flex max-w-full items-center gap-2 rounded-lg bg-n-surface-2 px-3 py-2 text-xs">
                     <i :class="attachment.content_type?.startsWith('image/') ? 'i-lucide-image' : 'i-lucide-paperclip'" class="size-3 text-n-slate-10" />
@@ -709,7 +788,7 @@ onMounted(async () => {
             <label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.COL_STAGE') }}<SelectInput v-model="filters.stage_id" :options="allStageOptions" /></label>
             <label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.COL_OWNER') }}<SelectInput v-model="filters.owner_id" :options="ownerOptions" /></label>
             <label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.COL_STATUS') }}<SelectInput v-model="filters.status" :options="statusOptions" /></label>
-            <Popover align="end"><NextButton outline slate size="sm" icon="i-lucide-list-filter" :label="`${$t('VIBEEXE_CRM.WORKSPACE.MORE_FILTERS')}${activeFilterCount ? ` (${activeFilterCount})` : ''}`" /><template #content><div class="grid w-[min(28rem,calc(100vw-2rem))] grid-cols-1 gap-4 p-4 sm:grid-cols-2"><label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.COL_PRIORITY') }}<SelectInput v-model="filters.priority" :options="priorityOptions" /></label><label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.COL_TEAM') }}<SelectInput v-model="filters.team_id" :options="filterTeamOptions" /></label><label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.COL_SOURCE') }}<SelectInput v-model="filters.source" :options="sourceOptions" /></label><Input v-model="filters.created_from" type="date" :label="$t('VIBEEXE_CRM.WORKSPACE.CREATED_AFTER')" /><Input v-model="filters.close_from" type="date" :label="$t('VIBEEXE_CRM.WORKSPACE.CLOSES_AFTER')" /></div></template></Popover>
+            <Popover align="end"><NextButton outline slate size="sm" icon="i-lucide-list-filter" :label="`${$t('VIBEEXE_CRM.WORKSPACE.MORE_FILTERS')}${activeFilterCount ? ` (${activeFilterCount})` : ''}`" /><template #content><div class="grid w-[min(28rem,calc(100vw-2rem))] grid-cols-1 gap-4 p-4 sm:grid-cols-2"><label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.COL_PRIORITY') }}<SelectInput v-model="filters.priority" :options="priorityOptions" /></label><label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.COL_TEAM') }}<SelectInput v-model="filters.team_id" :options="filterTeamOptions" /></label><label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.COL_SOURCE') }}<SelectInput v-model="filters.source" :options="sourceOptions" /></label><label class="flex flex-col gap-1 text-xs font-medium text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.TAGS') }}<SelectInput v-model="filters.label_id" :options="labelOptions" /></label><Input v-model="filters.created_from" type="date" :label="$t('VIBEEXE_CRM.WORKSPACE.CREATED_AFTER')" /><Input v-model="filters.close_from" type="date" :label="$t('VIBEEXE_CRM.WORKSPACE.CLOSES_AFTER')" /></div></template></Popover>
           </div>
           <div class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-n-weak pt-3"><div class="flex flex-wrap items-center gap-2"><p class="mb-0 text-xs text-n-slate-10">{{ $t('VIBEEXE_CRM.WORKSPACE.RESULT_COUNT', { count: totalCount }) }}</p><button v-for="chip in activeFilterChips" :key="chip.key" class="inline-flex items-center gap-1 rounded-md bg-n-slate-3 px-2 py-1 text-xs font-medium text-n-slate-11 hover:bg-n-slate-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-blue-9" :aria-label="`${$t('VIBEEXE_CRM.WORKSPACE.REMOVE_FILTER')} ${chip.label}`" @click="filters[chip.key] = ''">{{ chip.label }}<i class="i-lucide-x size-3" /></button></div><NextButton v-if="activeFilterCount" ghost slate size="sm" icon="i-lucide-x" :label="$t('VIBEEXE_CRM.WORKSPACE.CLEAR_FILTERS')" @click="clearFilters" /></div>
         </section>
@@ -738,7 +817,7 @@ onMounted(async () => {
           <BaseTable :headers="headers" :items="leads" :loading="isLoading" :no-data-message="$t('VIBEEXE_CRM.WORKSPACE.EMPTY_LIST')">
             <template #row="{ items }">
               <BaseTableRow v-for="lead in items" :key="lead.id" :item="lead" class="transition-colors hover:bg-n-surface-2">
-                <BaseTableCell><button class="max-w-56 truncate text-left font-medium text-n-blue-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-blue-9" :title="lead.title" @click="openLead(lead)">{{ lead.title }}</button><p class="mt-0.5 mb-0 max-w-56 truncate text-xs text-n-slate-10">{{ lead.pipeline_name }} · {{ normalizedLabel(lead.source) }}</p></BaseTableCell>
+                <BaseTableCell><button class="max-w-56 truncate text-left font-medium text-n-blue-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-blue-9" :title="lead.title" @click="openLead(lead)">{{ lead.title }}</button><p class="mt-0.5 mb-0 max-w-56 truncate text-xs text-n-slate-10">{{ lead.pipeline_name }} · {{ normalizedLabel(lead.source) }}</p><div v-if="lead.tags?.length" class="mt-2 flex max-w-64 flex-wrap gap-1"><Label v-for="tag in lead.tags" :key="tag.id" :label="tag" compact /></div></BaseTableCell>
                 <BaseTableCell>{{ lead.contact?.name || $t('VIBEEXE_CRM.WORKSPACE.UNKNOWN_CONTACT') }}</BaseTableCell>
                 <BaseTableCell><VibeExeCrmBadge :value="lead.pipeline_stage_name" type="accent" /></BaseTableCell>
                 <BaseTableCell>{{ lead.owner_name || $t('VIBEEXE_CRM.WORKSPACE.UNASSIGNED') }}</BaseTableCell>
@@ -780,5 +859,12 @@ onMounted(async () => {
     </Dialog>
     <Dialog ref="lostDialog" type="alert" width="sm" :title="$t('VIBEEXE_CRM.WORKSPACE.MARK_LOST_TITLE')" :description="$t('VIBEEXE_CRM.WORKSPACE.MARK_LOST_DESCRIPTION')" :confirm-button-label="$t('VIBEEXE_CRM.WORKSPACE.MARK_LOST')" :disable-confirm-button="!lostReason.trim()" @confirm="confirmLost"><Input v-model="lostReason" :label="$t('VIBEEXE_CRM.WORKSPACE.LOST_REASON')" /></Dialog>
     <Dialog ref="archiveDialog" type="alert" width="sm" :title="$t('VIBEEXE_CRM.WORKSPACE.ARCHIVE_TITLE')" :description="$t('VIBEEXE_CRM.WORKSPACE.ARCHIVE_DESCRIPTION')" :confirm-button-label="$t('VIBEEXE_CRM.WORKSPACE.ARCHIVE')" @confirm="confirmArchive" />
+    <Dialog ref="noteDialog" width="lg" :title="$t('VIBEEXE_CRM.PRODUCTIVITY.EDIT_NOTE')" :confirm-button-label="$t('VIBEEXE_CRM.PRODUCTIVITY.SAVE_NOTE')" :disable-confirm-button="!editedNoteBody.trim()" @confirm="updateNote">
+      <TextArea v-model="editedNoteBody" :label="$t('VIBEEXE_CRM.PRODUCTIVITY.NOTE_LABEL')" :max-length="10000" min-height="8rem" max-height="20rem" auto-height resize show-character-count />
+    </Dialog>
+    <Dialog ref="deleteNoteDialog" type="alert" width="sm" :title="$t('VIBEEXE_CRM.PRODUCTIVITY.DELETE_NOTE_TITLE')" :description="$t('VIBEEXE_CRM.PRODUCTIVITY.DELETE_NOTE_DESCRIPTION')" :confirm-button-label="$t('VIBEEXE_CRM.PRODUCTIVITY.DELETE_NOTE')" @confirm="deleteNote" />
+    <Dialog ref="completeTaskDialog" width="lg" :title="$t('VIBEEXE_CRM.TASKS.COMPLETE_TITLE')" :description="$t('VIBEEXE_CRM.TASKS.COMPLETE_DESCRIPTION')" :confirm-button-label="$t('VIBEEXE_CRM.TASKS.COMPLETE')" @confirm="completeTask">
+      <TextArea v-model="taskCompletionNote" :label="$t('VIBEEXE_CRM.TASKS.COMPLETION_NOTE')" :placeholder="$t('VIBEEXE_CRM.TASKS.COMPLETION_NOTE_PLACEHOLDER')" :max-length="5000" min-height="7rem" max-height="16rem" auto-height resize show-character-count />
+    </Dialog>
   </VibeExePageShell>
 </template>

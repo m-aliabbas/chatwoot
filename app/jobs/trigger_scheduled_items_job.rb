@@ -14,6 +14,9 @@ class TriggerScheduledItemsJob < ApplicationJob
     # Job to reopen snoozed notifications
     Notification::ReopenSnoozedNotificationsJob.perform_later
 
+    # Job to deliver due CRM task reminders
+    VibeExe::Crm::TaskReminderJob.perform_later
+
     # Job to auto-resolve conversations
     Account::ConversationsResolutionSchedulerJob.perform_later
 

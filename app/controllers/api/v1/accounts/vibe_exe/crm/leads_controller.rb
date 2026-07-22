@@ -110,13 +110,13 @@ class Api::V1::Accounts::VibeExe::Crm::LeadsController < Api::V1::Accounts::Vibe
 
   def set_lead
     @lead = VibeExe::Crm::Lead
-            .includes(:contact, :pipeline, :pipeline_stage, :owner, :team)
+            .includes(:contact, :pipeline, :pipeline_stage, :owner, :team, :tags)
             .find_by!(account: Current.account, id: params[:id])
   end
 
   def filtered_leads
     scope = VibeExe::Crm::Lead
-            .includes(:contact, :pipeline, :pipeline_stage, :owner, :team)
+            .includes(:contact, :pipeline, :pipeline_stage, :owner, :team, :tags)
             .where(account: Current.account)
     scope = scope.active unless params[:include_archived].to_s == 'true'
     scope = scope.where(pipeline_id: params[:pipeline_id]) if params[:pipeline_id].present?

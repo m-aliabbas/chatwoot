@@ -90,6 +90,21 @@ const openNotification = async notificationItem => {
     notification_type: notificationType,
   } = notificationItem;
 
+  if (notificationType === 'task_reminder') {
+    await store.dispatch('notifications/read', {
+      id,
+      primaryActorId,
+      primaryActorType,
+      unreadCount,
+    });
+    router.push({
+      name: 'lead_show',
+      params: { leadId: notificationItem.meta.lead_id },
+      query: { task_id: notificationItem.meta.task_id },
+    });
+    return;
+  }
+
   useTrack(INBOX_EVENTS.OPEN_CONVERSATION_VIA_INBOX, {
     notificationType,
   });

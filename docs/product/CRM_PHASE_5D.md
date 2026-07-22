@@ -43,7 +43,9 @@ Rollback is a standard single-step rollback; the additive migration drops only t
 - 5D.3 task lifecycle services and APIs: implemented.
 - 5D.4 lead-detail productivity UI: pending.
 - 5D.5 Tasks workspace UI: implemented with agent-default worklist, search, filters, pagination, create/edit, completion, cancellation, lead navigation, overdue and due-today views.
-- 5D.6 reminder delivery and notification UI: pending.
+- Task lead selection uses a lazy, debounced server-backed autocomplete over lead title, contact name, and contact email; it does not preload the account's lead catalog.
+- Task lifecycle UX includes optional completion notes, dedicated rescheduling, resolved reminder presets, overdue/upcoming lead groupings, and attachment indicators.
+- 5D.6 reminder delivery and notification UI: implemented through the scheduled-items runner and the existing in-app notification feed. Delivery is assignee-only, pending-task-only, duplicate-safe, and does not send email or push notifications.
 - 5D.7 focused tests, responsive polish, and final QA: pending.
 
 Phase 5E concepts are intentionally excluded.

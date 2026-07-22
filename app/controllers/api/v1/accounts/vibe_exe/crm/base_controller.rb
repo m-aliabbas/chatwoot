@@ -37,6 +37,7 @@ class Api::V1::Accounts::VibeExe::Crm::BaseController < Api::V1::Accounts::BaseC
       team_id: lead.team_id,
       team_name: lead.team&.name,
       contact: contact_payload(lead.contact),
+      tags: lead_tags_payload(lead),
       last_activity_at: lead.last_activity_at,
       created_at: lead.created_at,
       updated_at: lead.updated_at
@@ -46,8 +47,29 @@ class Api::V1::Accounts::VibeExe::Crm::BaseController < Api::V1::Accounts::BaseC
   def lead_detail_payload(lead)
     lead_summary(lead).merge(
       metadata: lead.metadata,
-      duplicate_warnings: duplicate_warnings_for(lead)
+      duplicate_warnings: duplicate_warnings_for(lead),
+      productivity_summary: productivity_summary(lead)
     )
+  end
+
+  def lead_tags_payload(lead)
+    lead.tags.filter_map do |tag|
+      label = account_labels_by_title[tag.name]
+      { id: label.id, title: label.title, color: label.color } if label
+    end
+  end
+
+  def account_labels_by_title
+    @account_labels_by_title ||= Current.account.labels.index_by(&:title)
+  end
+
+  def productivity_summary(lead)
+    pending_tasks = lead.tasks.pending
+    {
+      open_tasks_count: pending_tasks.count,
+      overdue_tasks_count: pending_tasks.where('due_at < ?', Time.current).count,
+      next_task_due_at: pending_tasks.minimum(:due_at)
+    }
   end
 
   def pipeline_payload(pipeline, include_inactive_stages: false)

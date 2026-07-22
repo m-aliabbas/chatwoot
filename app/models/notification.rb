@@ -43,7 +43,8 @@ class Notification < ApplicationRecord
     participating_conversation_new_message: 5,
     sla_missed_first_response: 6,
     sla_missed_next_response: 7,
-    sla_missed_resolution: 8
+    sla_missed_resolution: 8,
+    task_reminder: 9
   }.freeze
 
   enum notification_type: NOTIFICATION_TYPES
@@ -53,7 +54,7 @@ class Notification < ApplicationRecord
   after_destroy_commit :dispatch_destroy_event
   after_update_commit :dispatch_update_event
 
-  PRIMARY_ACTORS = ['Conversation'].freeze
+  PRIMARY_ACTORS = ['Conversation', 'VibeExe::Crm::Task'].freeze
 
   def push_event_data
     # Secondary actor could be nil for cases like system assigning conversation
@@ -95,13 +96,16 @@ class Notification < ApplicationRecord
       'conversation_mention' => 'notifications.notification_title.conversation_mention',
       'sla_missed_first_response' => 'notifications.notification_title.sla_missed_first_response',
       'sla_missed_next_response' => 'notifications.notification_title.sla_missed_next_response',
-      'sla_missed_resolution' => 'notifications.notification_title.sla_missed_resolution'
+      'sla_missed_resolution' => 'notifications.notification_title.sla_missed_resolution',
+      'task_reminder' => 'notifications.notification_title.task_reminder'
     }
 
     i18n_key = notification_title_map[notification_type]
     return '' unless i18n_key
 
-    if notification_type == 'conversation_creation'
+    if notification_type == 'task_reminder'
+      I18n.t(i18n_key, task_title: primary_actor.title)
+    elsif notification_type == 'conversation_creation'
       I18n.t(i18n_key, display_id: conversation.display_id, inbox_name: primary_actor.inbox.name)
     elsif %w[conversation_assignment assigned_conversation_new_message participating_conversation_new_message
              conversation_mention].include?(notification_type)
@@ -114,6 +118,9 @@ class Notification < ApplicationRecord
 
   def push_message_body
     case notification_type
+    when 'task_reminder'
+      due_at = primary_actor.due_at.in_time_zone(primary_actor.account.timezone)
+      I18n.t('notifications.task_reminder_body', lead_title: primary_actor.lead.title, due_at: I18n.l(due_at, format: :short))
     when 'conversation_creation', 'sla_missed_first_response'
       message_body(conversation.messages.first)
     when 'assigned_conversation_new_message', 'participating_conversation_new_message', 'conversation_mention'
@@ -153,6 +160,8 @@ class Notification < ApplicationRecord
   end
 
   def process_notification_delivery
+    return if task_reminder?
+
     Notification::PushNotificationJob.perform_later(self) if user_subscribed_to_notification?('push')
 
     # Should we do something about the case where user subscribed to both push and email ?
