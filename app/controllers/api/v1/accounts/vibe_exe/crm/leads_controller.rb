@@ -89,7 +89,7 @@ class Api::V1::Accounts::VibeExe::Crm::LeadsController < Api::V1::Accounts::Vibe
   end
 
   def board
-    authorize VibeExe::Crm::Lead
+    authorize VibeExe::Crm::Lead, :index?
 
     pipeline = VibeExe::Crm::Pipeline.active.find_by!(account: Current.account, id: params.require(:pipeline_id))
     stages = pipeline.stages.active.ordered

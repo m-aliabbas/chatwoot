@@ -75,6 +75,23 @@ Agents can open existing leads from the warning area. No automatic merge behavio
 - The detail sidebar stacks under content on narrower screens.
 - The board uses intentional horizontal stage scrolling.
 - Primary actions remain in the header/action rows on narrow layouts.
+- The lead toolbar separates primary filters from a responsive More Filters popover and keeps list/board selection beside the primary create action.
+- Create/edit forms use the accessible components-next dialog, switch to one column on small screens, and keep their body vertically bounded.
+
+## Workspace UI
+
+- Lead rows prioritize lead, contact, stage, owner, priority, status, value, activity, and created date; secondary pipeline and source context appears under the lead title.
+- `VibeExeCrmBadge` provides text-labelled status, priority, stage, and conversation-state treatments; `VibeExeDetailField` provides consistent structured values and intentional empty states.
+- Lead lifecycle actions use focused lost and archive confirmation dialogs. Lost reason is only collected when the lead is marked lost.
+- Linked conversations use structured message rows, while lead events and notes use a chronological activity timeline.
+- Pipeline settings use labelled controls, selected-pipeline affordances, and responsive stage rows while preserving existing API behavior.
+
+## Accessibility Decisions
+
+- Filters and form selectors have visible labels and meaningful empty options.
+- Native components-next dialogs retain keyboard focus management and Escape behavior; destructive actions require confirmation.
+- Badges include readable text and do not communicate state by color alone.
+- Loading and error states expose status and alert roles, and lead links retain visible keyboard focus.
 
 ## Manual Commands
 
