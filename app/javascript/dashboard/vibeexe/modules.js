@@ -200,6 +200,7 @@ export const VIBEEXE_MODULES = [
       'canned_list',
       'settings_applications',
       'security_settings_index',
+      'crm_pipeline_settings',
     ],
     requiredRouteNames: ['settings_home'],
     enabledByDefault: true,

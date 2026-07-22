@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_21_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1472,12 +1472,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000000) do
     t.bigint "default_pipeline_id"
     t.bigint "default_owner_id"
     t.bigint "default_team_id"
+    t.bigint "default_stage_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_account_id"
     t.index ["default_owner_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_owner_id"
     t.index ["default_pipeline_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_pipeline_id"
     t.index ["default_team_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_team_id"
+    t.index ["default_stage_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_default_stage_id"
     t.index ["inbox_id"], name: "index_vibeexe_crm_inbox_lead_configs_on_inbox_id", unique: true
   end
 
@@ -1488,6 +1490,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000000) do
     t.bigint "user_id"
     t.string "activity_type", null: false
     t.jsonb "metadata", default: {}, null: false
+    t.decimal "estimated_value", precision: 15, scale: 2
+    t.string "currency", default: "USD", null: false
+    t.date "expected_close_date"
+    t.datetime "last_activity_at"
     t.datetime "occurred_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -1536,6 +1542,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000000) do
     t.datetime "updated_at", null: false
     t.index ["account_id", "contact_id", "status", "archived_at"], name: "index_vibeexe_leads_on_open_contact_lookup"
     t.index ["account_id", "pipeline_id", "pipeline_stage_id"], name: "index_vibeexe_leads_on_pipeline_lookup"
+    t.index ["account_id", "expected_close_date"], name: "index_vibeexe_leads_on_expected_close_lookup"
+    t.index ["account_id", "last_activity_at"], name: "index_vibeexe_leads_on_last_activity_lookup"
+    t.index ["account_id", "status", "archived_at"], name: "index_vibeexe_leads_on_status_lookup"
     t.index ["account_id"], name: "index_vibeexe_crm_leads_on_account_id"
     t.index ["contact_id"], name: "index_vibeexe_crm_leads_on_contact_id"
     t.index ["created_by_id"], name: "index_vibeexe_crm_leads_on_created_by_id"
@@ -1552,6 +1561,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000000) do
     t.boolean "default", default: false, null: false
     t.boolean "active", default: true, null: false
     t.integer "position", default: 0, null: false
+    t.integer "stage_type", default: 0, null: false
+    t.integer "probability", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_vibeexe_crm_pipeline_stages_on_account_id"
@@ -1619,6 +1630,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000000) do
   add_foreign_key "vibeexe_crm_lead_conversations", "conversations"
   add_foreign_key "vibeexe_crm_lead_conversations", "users", column: "linked_by_id"
   add_foreign_key "vibeexe_crm_lead_conversations", "vibeexe_crm_leads", column: "lead_id"
+  add_foreign_key "vibeexe_crm_inbox_lead_configs", "vibeexe_crm_pipeline_stages", column: "default_stage_id"
   add_foreign_key "vibeexe_crm_leads", "accounts"
   add_foreign_key "vibeexe_crm_leads", "contacts"
   add_foreign_key "vibeexe_crm_leads", "teams"

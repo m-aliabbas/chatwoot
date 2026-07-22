@@ -38,7 +38,7 @@ class VibeExe::Crm::PipelineStage < ApplicationRecord
   validate :validate_account_consistency
 
   scope :active, -> { where(active: true) }
-  scope :ordered, -> { order(default: :desc, position: :asc, id: :asc) }
+  scope :ordered, -> { order(position: :asc, id: :asc) }
 
   private
 

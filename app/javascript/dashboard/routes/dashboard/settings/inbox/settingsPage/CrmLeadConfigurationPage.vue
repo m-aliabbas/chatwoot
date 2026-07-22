@@ -114,6 +114,21 @@ const saveConfig = async () => {
 };
 
 watch(() => props.inbox?.id, fetchConfig);
+watch(
+  () => form.value.default_pipeline_id,
+  (pipelineId, previousPipelineId) => {
+    const selectedStageIsValid = stageOptions.value.some(
+      option => option.value === Number(form.value.default_stage_id)
+    );
+    if (
+      previousPipelineId !== undefined &&
+      pipelineId !== previousPipelineId &&
+      !selectedStageIsValid
+    ) {
+      form.value.default_stage_id = '';
+    }
+  }
+);
 
 onMounted(() => {
   store.dispatch('agents/get');
@@ -147,23 +162,23 @@ onMounted(() => {
 
       <label class="grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-2 md:gap-6 items-center">
         <span class="text-sm font-medium text-n-slate-12">
-          {{ $t('VIBEEXE_CRM.LEAD_CONFIG.STAGE') }}
-        </span>
-        <SelectInput
-          v-model="form.default_stage_id"
-          :options="stageOptions"
-          :disabled="isFetching || !form.default_pipeline_id"
-        />
-      </label>
-
-      <label class="grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-2 md:gap-6 items-center">
-        <span class="text-sm font-medium text-n-slate-12">
           {{ $t('VIBEEXE_CRM.LEAD_CONFIG.PIPELINE') }}
         </span>
         <SelectInput
           v-model="form.default_pipeline_id"
           :options="pipelineOptions"
           :disabled="isFetching"
+        />
+      </label>
+
+      <label class="grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-2 md:gap-6 items-center">
+        <span class="text-sm font-medium text-n-slate-12">
+          {{ $t('VIBEEXE_CRM.LEAD_CONFIG.STAGE') }}
+        </span>
+        <SelectInput
+          v-model="form.default_stage_id"
+          :options="stageOptions"
+          :disabled="isFetching || !form.default_pipeline_id"
         />
       </label>
 

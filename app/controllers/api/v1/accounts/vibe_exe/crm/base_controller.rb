@@ -59,6 +59,8 @@ class Api::V1::Accounts::VibeExe::Crm::BaseController < Api::V1::Accounts::BaseC
       default: pipeline.default,
       active: pipeline.active,
       position: pipeline.position,
+      lead_count: pipeline.leads.count,
+      inbox_default_count: pipeline_inbox_default_count(pipeline),
       stages: stages.ordered.map { |stage| stage_payload(stage) }
     }
   end
@@ -72,8 +74,15 @@ class Api::V1::Accounts::VibeExe::Crm::BaseController < Api::V1::Accounts::BaseC
       active: stage.active,
       position: stage.position,
       stage_type: stage.stage_type,
-      probability: stage.probability
+      probability: stage.probability,
+      lead_count: stage.leads.count,
+      inbox_default_count: VibeExe::Crm::InboxLeadConfig.where(account: Current.account, default_stage: stage).count
     }
+  end
+
+  def pipeline_inbox_default_count(pipeline)
+    configs = VibeExe::Crm::InboxLeadConfig.where(account: Current.account)
+    configs.where(default_pipeline: pipeline).or(configs.where(default_stage_id: pipeline.stage_ids)).count
   end
 
   def contact_payload(contact)

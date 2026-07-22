@@ -1,4 +1,6 @@
 class Api::V1::Accounts::VibeExe::Crm::InboxLeadConfigsController < Api::V1::Accounts::VibeExe::Crm::BaseController
+  rescue_from ActiveRecord::RecordInvalid, with: :render_record_invalid
+
   before_action :set_inbox
   before_action :set_config
 

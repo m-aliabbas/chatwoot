@@ -20,7 +20,7 @@ Phase 5C replaces the Leads placeholder with a manual CRM workspace that works w
 - Lead create/edit dialog with contact, title, pipeline, stage, owner, team, source, priority, value, currency, expected close date, and lost reason.
 - Lead detail page with overview, duplicate warnings, linked conversations, activity timeline, note creation, lifecycle actions, and sidebar fields.
 - Pipeline board grouped by active stages for one pipeline. Cards can be opened and moved through a stage selector.
-- CRM pipeline settings for pipelines, stages, lifecycle stage type, probability, activation, deletion safeguards, and explicit default pipeline bootstrap.
+- CRM pipeline settings, discoverable under Settings → CRM → Pipelines, for pipelines, stages, lifecycle stage type, probability, activation, ordering, deletion safeguards, and explicit default pipeline bootstrap.
 
 ## Filters
 
@@ -123,7 +123,7 @@ pnpm eslint app/javascript/dashboard/api/vibeexeCrm.js app/javascript/dashboard/
 
 ## Remaining Gaps
 
-- Drag-and-drop was intentionally not added to avoid a new frontend dependency.
+- Stage ordering uses accessible move-up/move-down controls and the existing reorder API; drag-and-drop was intentionally not added to avoid a new frontend dependency.
 - Saved advanced lead filters are not implemented.
 - Full RBAC redesign and CRM-specific custom roles remain out of scope.
 - Tasks, reminders, properties, site visits, deals, imports/exports, automation, reporting, and AI qualification remain out of scope for Phase 5C.

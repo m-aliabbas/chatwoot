@@ -18,10 +18,11 @@ class VibeExe::Crm::BootstrapDefaultPipelineService
 
     VibeExe::Crm::Pipeline.transaction do
       pipeline = VibeExe::Crm::Pipeline.find_or_create_by!(account: @account, name: 'Sales Pipeline') do |record|
-        record.default = true
         record.position = 0
         record.active = true
       end
+      VibeExe::Crm::Pipeline.where(account: @account).where.not(id: pipeline.id).update_all(default: false)
+      pipeline.update!(default: true, active: true)
 
       STAGES.each_with_index do |(name, stage_type, probability), index|
         VibeExe::Crm::PipelineStage.find_or_create_by!(account: @account, pipeline: pipeline, name: name) do |stage|
@@ -31,6 +32,10 @@ class VibeExe::Crm::BootstrapDefaultPipelineService
           stage.probability = probability
         end
       end
+
+      default_stage = pipeline.stages.find_by!(name: STAGES.first.first)
+      pipeline.stages.where.not(id: default_stage.id).update_all(default: false)
+      default_stage.update!(default: true)
     end
 
     pipeline

@@ -10,6 +10,7 @@ import { useKbd } from 'dashboard/composables/utils/useKbd';
 import { provideSidebarContext, useSidebarResize } from './provider';
 import { useSidebarKeyboardShortcuts } from './useSidebarKeyboardShortcuts';
 import { useVibeExeModules, VIBEEXE_MODULE_IDS } from 'dashboard/vibeexe/modules';
+import { getSettingsNavigationItems } from './settingsNavigation';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import ChannelIcon from 'next/icon/ChannelIcon.vue';
@@ -287,68 +288,9 @@ const bottomMenuItems = computed(() =>
     .map(moduleToSidebarItem)
 );
 
-const settingsChildren = computed(() => [
-  {
-    name: 'Settings Account Settings',
-    label: t('SIDEBAR.ACCOUNT_SETTINGS'),
-    icon: 'i-lucide-briefcase',
-    to: accountScopedRoute('general_settings_index'),
-  },
-  {
-    name: 'Settings Inboxes',
-    label: t('SIDEBAR.INBOXES'),
-    icon: 'i-lucide-inbox',
-    to: accountScopedRoute('settings_inbox_list'),
-    activeOn: [
-      'settings_inbox_list',
-      'settings_inbox_show',
-      'settings_inbox_new',
-      'settings_inbox_finish',
-      'settings_inboxes_page_channel',
-      'settings_inboxes_add_agents',
-    ],
-  },
-  {
-    name: 'Settings Agents',
-    label: t('SIDEBAR.AGENTS'),
-    icon: 'i-lucide-square-user',
-    to: accountScopedRoute('agent_list'),
-  },
-  {
-    name: 'Settings Teams',
-    label: t('SIDEBAR.TEAMS'),
-    icon: 'i-lucide-users',
-    to: accountScopedRoute('settings_teams_list'),
-    activeOn: [
-      'settings_teams_list',
-      'settings_teams_new',
-      'settings_teams_finish',
-      'settings_teams_add_agents',
-      'settings_teams_show',
-      'settings_teams_edit',
-      'settings_teams_edit_members',
-      'settings_teams_edit_finish',
-    ],
-  },
-  {
-    name: 'Settings Labels',
-    label: t('SIDEBAR.LABELS'),
-    icon: 'i-lucide-tags',
-    to: accountScopedRoute('labels_list'),
-  },
-  {
-    name: 'Settings Canned Responses',
-    label: t('SIDEBAR.CANNED_RESPONSES'),
-    icon: 'i-lucide-message-square-quote',
-    to: accountScopedRoute('canned_list'),
-  },
-  {
-    name: 'Settings Security',
-    label: t('SIDEBAR.SECURITY'),
-    icon: 'i-lucide-shield',
-    to: accountScopedRoute('security_settings_index'),
-  },
-]);
+const settingsChildren = computed(() =>
+  getSettingsNavigationItems({ t, accountScopedRoute })
+);
 
 const settingsModule = computed(() =>
   bottomModules.value.find(module => module.id === VIBEEXE_MODULE_IDS.SETTINGS)
