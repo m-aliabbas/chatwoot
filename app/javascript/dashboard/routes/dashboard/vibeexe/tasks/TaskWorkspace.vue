@@ -316,7 +316,7 @@ onMounted(async () => {
           </template>
         </BaseTable>
       </div>
-      <PaginationFooter v-if="totalCount > 25" v-model:current-page="currentPage" :total-items="totalCount" :items-per-page="25" />
+      <PaginationFooter v-if="totalCount" v-model:current-page="currentPage" :total-items="totalCount" :items-per-page="25" />
     </div>
 
     <Dialog ref="formDialog" width="2xl" overflow-y-auto :title="editingTask ? $t('VIBEEXE_CRM.TASKS.EDIT_TASK') : $t('VIBEEXE_CRM.TASKS.CREATE_TASK')" :confirm-button-label="$t('VIBEEXE_CRM.TASKS.SAVE')" :disable-confirm-button="!isFormValid || isUploading" :is-loading="isSaving" @confirm="saveTask">

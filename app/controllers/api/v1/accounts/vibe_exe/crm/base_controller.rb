@@ -53,7 +53,7 @@ class Api::V1::Accounts::VibeExe::Crm::BaseController < Api::V1::Accounts::BaseC
   end
 
   def lead_tags_payload(lead)
-    lead.tags.filter_map do |tag|
+    lead.labels.filter_map do |tag|
       label = account_labels_by_title[tag.name]
       { id: label.id, title: label.title, color: label.color } if label
     end

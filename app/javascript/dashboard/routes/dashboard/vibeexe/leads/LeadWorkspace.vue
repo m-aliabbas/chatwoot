@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
+import Draggable from 'vuedraggable';
 import VibeExePageShell from 'dashboard/components-next/vibeexe/VibeExePageShell.vue';
 import BaseTable from 'dashboard/components-next/table/BaseTable.vue';
 import BaseTableRow from 'dashboard/components-next/table/BaseTableRow.vue';
@@ -38,6 +39,8 @@ const activities = ref([]);
 const notes = ref([]);
 const tasks = ref([]);
 const boardColumns = ref([]);
+const boardSnapshot = ref(null);
+const isMovingBoardLead = ref(false);
 const contacts = ref([]);
 const selectedContact = ref(null);
 const contactDropdown = ref(false);
@@ -442,6 +445,39 @@ const moveLeadToStage = async (lead, stageId) => {
   }
 };
 
+const startBoardDrag = () => {
+  boardSnapshot.value = boardColumns.value.map(column => ({
+    ...column,
+    leads: [...column.leads],
+  }));
+};
+
+const endBoardDrag = () => {
+  if (!isMovingBoardLead.value) boardSnapshot.value = null;
+};
+
+const moveBoardLead = async (event, column) => {
+  if (!event.added) return;
+
+  const lead = event.added.element;
+  const previousColumns = boardSnapshot.value;
+  isMovingBoardLead.value = true;
+
+  try {
+    await VibeExeCrmAPI.changeLeadStage(lead.id, {
+      pipeline_stage_id: column.stage.id,
+    });
+    lead.pipeline_stage_id = column.stage.id;
+    lead.pipeline_stage_name = column.stage.name;
+  } catch (error) {
+    boardColumns.value = previousColumns;
+    showError(error);
+  } finally {
+    boardSnapshot.value = null;
+    isMovingBoardLead.value = false;
+  }
+};
+
 const linkConversation = async conversation => {
   await VibeExeCrmAPI.linkConversationToLead(selectedLead.value.id, conversation.id);
   await fetchLeadConversations(selectedLead.value.id);
@@ -800,15 +836,35 @@ onMounted(async () => {
           <div class="grid min-w-[56rem] auto-cols-[18rem] grid-flow-col gap-3">
             <section v-for="column in boardColumns" :key="column.stage.id" class="rounded-xl border border-n-weak bg-n-surface-1">
               <header class="flex items-center justify-between border-b border-n-weak p-4 text-sm font-semibold text-n-slate-12"><span>{{ column.stage.name }}</span><span class="rounded-full bg-n-slate-3 px-2 py-0.5 text-xs text-n-slate-11">{{ column.leads.length }}</span></header>
-              <div class="flex min-h-40 flex-col gap-2 p-3">
-                <p v-if="!column.leads.length" class="text-sm text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.EMPTY_STAGE') }}</p>
-                <article v-for="lead in column.leads" :key="lead.id" class="rounded-lg border border-n-weak bg-n-surface-2 p-3 text-sm transition hover:border-n-strong hover:shadow-sm">
-                  <button class="mb-2 block max-w-full truncate text-left font-semibold text-n-slate-12 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-blue-9" @click="openLead(lead)">{{ lead.title }}</button>
-                  <p class="mb-1 truncate text-n-slate-11">{{ lead.contact?.name || $t('VIBEEXE_CRM.WORKSPACE.UNKNOWN_CONTACT') }}</p>
-                  <p class="mb-2 text-n-slate-11">{{ formatMoney(lead) }}</p>
-                  <SelectInput :model-value="lead.pipeline_stage_id" :options="allStageOptions" @update:model-value="moveLeadToStage(lead, $event)" />
-                </article>
-              </div>
+              <Draggable
+                v-model="column.leads"
+                class="flex min-h-40 flex-col gap-2 p-3"
+                :group="{ name: 'crm-leads' }"
+                :disabled="isMovingBoardLead"
+                item-key="id"
+                handle=".lead-drag-handle"
+                animation="200"
+                @start="startBoardDrag"
+                @end="endBoardDrag"
+                @change="moveBoardLead($event, column)"
+              >
+                <template #item="{ element: lead }">
+                  <article class="rounded-lg border border-n-weak bg-n-surface-2 p-3 text-sm transition hover:border-n-strong hover:shadow-sm">
+                    <div class="mb-2 flex items-center gap-2">
+                      <button class="lead-drag-handle cursor-grab text-n-slate-9 hover:text-n-slate-12 active:cursor-grabbing" type="button" :aria-label="$t('VIBEEXE_CRM.WORKSPACE.DRAG_LEAD')">
+                        <i class="i-lucide-grip-vertical size-4" />
+                      </button>
+                      <button class="block min-w-0 flex-1 truncate text-left font-semibold text-n-slate-12 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-blue-9" @click="openLead(lead)">{{ lead.title }}</button>
+                    </div>
+                    <p class="mb-1 truncate text-n-slate-11">{{ lead.contact?.name || $t('VIBEEXE_CRM.WORKSPACE.UNKNOWN_CONTACT') }}</p>
+                    <p class="mb-2 text-n-slate-11">{{ formatMoney(lead) }}</p>
+                    <SelectInput :model-value="lead.pipeline_stage_id" :options="allStageOptions" @update:model-value="moveLeadToStage(lead, $event)" />
+                  </article>
+                </template>
+                <template #footer>
+                  <p v-if="!column.leads.length" class="pointer-events-none text-sm text-n-slate-11">{{ $t('VIBEEXE_CRM.WORKSPACE.EMPTY_STAGE') }}</p>
+                </template>
+              </Draggable>
             </section>
           </div>
         </div>
