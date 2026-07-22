@@ -6,6 +6,12 @@ import yaml from '@rollup/plugin-yaml';
 
 export default defineConfig({
   plugins: [ruby(), vue(vueOptions), yaml()],
+
+  server: {
+    host: process.env.VITE_DEV_SERVER_HOST || 'localhost',
+    allowedHosts: ['vite'],
+  },
+
   css: {
     preprocessorOptions: {
       scss: {
@@ -13,5 +19,8 @@ export default defineConfig({
       },
     },
   },
-  resolve: { alias: aliases },
+
+  resolve: {
+    alias: aliases,
+  },
 });
