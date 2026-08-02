@@ -97,6 +97,8 @@ services:
       POSTGRES_DB: chatwoot
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD}
+      VIBE_AI_DB_PASSWORD: ${VIBE_AI_DB_PASSWORD}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d chatwoot"]
       interval: 5s
