@@ -1,61 +1,90 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
-# Docker only runs scripts in docker-entrypoint-initdb.d when the PostgreSQL
-# data directory is empty. This script provisions the extra VibeExe databases
-# for a fresh installation only.
+# This script is mounted relative to docker-compose.yaml:
+# ./docker/postgres/initdb:/docker-entrypoint-initdb.d:ro
+#
+# PostgreSQL executes it automatically only when its data directory is empty.
 
-psql_exec() {
-  local database_name="$1"
-  shift
+: "${POSTGRES_USER:=postgres}"
+: "${N8N_DB_PASSWORD:?N8N_DB_PASSWORD is required}"
+: "${VIBE_AI_DB_PASSWORD:?VIBE_AI_DB_PASSWORD is required}"
 
-  psql --username "${POSTGRES_USER}" --dbname "${database_name}" -v ON_ERROR_STOP=1 "$@"
-}
+N8N_DB_NAME="${N8N_DB_NAME:-n8n_vibeexe}"
+N8N_DB_USER="${N8N_DB_USER:-n8n_user}"
 
-create_role_if_missing() {
+VIBE_AI_DB_NAME="${VIBE_AI_DB_NAME:-vibe_ai}"
+VIBE_AI_DB_USER="${VIBE_AI_DB_USER:-vibe_ai_user}"
+
+create_role_and_database() {
   local role_name="$1"
   local role_password="$2"
+  local database_name="$3"
 
-  psql_exec "${POSTGRES_DB}" --set=role_name="$role_name" --set=role_password="$role_password" <<'SQL'
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'role_name') THEN
-    EXECUTE format('CREATE ROLE %I WITH LOGIN PASSWORD %L', :'role_name', :'role_password');
-  END IF;
-END
-$$;
-SQL
-}
-
-create_database_if_missing() {
-  local database_name="$1"
-  local owner_name="$2"
-
-  psql_exec "${POSTGRES_DB}" --set=db_name="$database_name" --set=owner_name="$owner_name" <<'SQL'
-SELECT format('CREATE DATABASE %I OWNER %I', :'db_name', :'owner_name')
+  psql \
+    --username "$POSTGRES_USER" \
+    --dbname postgres \
+    --set=ON_ERROR_STOP=1 \
+    --set=role_name="$role_name" \
+    --set=role_password="$role_password" \
+    --set=database_name="$database_name" <<'SQL'
+SELECT format(
+  'CREATE ROLE %I WITH LOGIN PASSWORD %L',
+  :'role_name',
+  :'role_password'
+)
 WHERE NOT EXISTS (
-  SELECT 1 FROM pg_database WHERE datname = :'db_name'
+  SELECT 1
+  FROM pg_roles
+  WHERE rolname = :'role_name'
 )
 \gexec
-SELECT format('ALTER DATABASE %I OWNER TO %I', :'db_name', :'owner_name')
-WHERE EXISTS (
-  SELECT 1 FROM pg_database WHERE datname = :'db_name'
+
+SELECT format(
+  'ALTER ROLE %I WITH LOGIN PASSWORD %L',
+  :'role_name',
+  :'role_password'
+)
+\gexec
+
+SELECT format(
+  'CREATE DATABASE %I OWNER %I',
+  :'database_name',
+  :'role_name'
+)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM pg_database
+  WHERE datname = :'database_name'
+)
+\gexec
+
+SELECT format(
+  'ALTER DATABASE %I OWNER TO %I',
+  :'database_name',
+  :'role_name'
 )
 \gexec
 SQL
 }
 
-enable_vector_extension() {
-  psql_exec "${VIBE_AI_DB_NAME}" <<'SQL'
-CREATE EXTENSION IF NOT EXISTS vector;
-SQL
-}
+echo "Creating n8n role and database..."
+create_role_and_database \
+  "$N8N_DB_USER" \
+  "$N8N_DB_PASSWORD" \
+  "$N8N_DB_NAME"
 
-create_role_if_missing "n8n_user" "${N8N_DB_PASSWORD}"
-create_database_if_missing "n8n_vibeexe" "n8n_user"
+echo "Creating Vibe AI role and database..."
+create_role_and_database \
+  "$VIBE_AI_DB_USER" \
+  "$VIBE_AI_DB_PASSWORD" \
+  "$VIBE_AI_DB_NAME"
 
-create_role_if_missing "${VIBE_AI_DB_USER}" "${VIBE_AI_DB_PASSWORD}"
-create_database_if_missing "${VIBE_AI_DB_NAME}" "${VIBE_AI_DB_USER}"
-enable_vector_extension
+echo "Enabling pgvector in ${VIBE_AI_DB_NAME}..."
+psql \
+  --username "$POSTGRES_USER" \
+  --dbname "$VIBE_AI_DB_NAME" \
+  --set=ON_ERROR_STOP=1 \
+  --command='CREATE EXTENSION IF NOT EXISTS vector;'
 
-printf 'Initialized databases: %s, %s\n' "n8n_vibeexe" "${VIBE_AI_DB_NAME}"
+echo "Vibe databases initialized successfully."
