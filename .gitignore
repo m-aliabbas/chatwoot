@@ -29,6 +29,9 @@ master.key
 
 # Ignore env files
 .env
+*.backup
+postgres-all-backup.sql
+backups/
 
 public/uploads
 public/packs*
